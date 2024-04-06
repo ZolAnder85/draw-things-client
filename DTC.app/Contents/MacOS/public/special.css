@@ -1,0 +1,162 @@
+.started {
+	background: rgb(35, 70, 35);
+}
+
+.error {
+	background: rgb(100, 35, 35);
+}
+
+.history {
+	background: rgb(35, 50, 70);
+}
+
+:root {
+	--started-color: rgb(35, 70, 35);
+	--error-color: rgb(100, 35, 35);
+	--history-color: rgb(35, 50, 70);
+}
+
+@media (prefers-color-scheme: light) {
+	:root {
+		--started-color: rgb(60, 100, 60);
+		--error-color: rgb(120, 60, 60);
+		--history-color: rgb(60, 80, 120);
+	}
+}
+
+.content {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	align-content: flex-start;
+	gap: 10px;
+	padding: 10px;
+}
+
+.content > div {
+	flex-grow: 1;
+	width: 500px;
+}
+
+/* images */
+
+.placeHolder {
+	padding: 10px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: pre;
+	line-height: 25px;
+	color: rgba(230, 230, 230, 0.7);
+	background: rgb(35, 35, 35);
+	border-radius: 5px;
+}
+
+.placeHolder:hover {
+	color: rgb(230, 230, 230);
+}
+
+.itemWrapper {
+	position: relative;
+	overflow: hidden;
+	border-radius: 5px;
+	line-height: 0;
+}
+
+.itemWrapper > div {
+	position: absolute;
+	top: 0;
+	padding: 10px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	line-height: 25px;
+}
+
+.itemWrapper > .itemContent {
+	left: 0;
+	right: 80px;
+	height: 100%;
+	color: rgba(230, 230, 230, 0.7);
+}
+
+.itemWrapper > .itemContent:hover {
+	color: rgb(230, 230, 230);
+}
+
+.itemWrapper > .itemRemove {
+	right: 0;
+	width: 80px;
+	color: rgba(230, 100, 100, 0.7);
+}
+
+.itemWrapper > .itemRemove:hover {
+	color: rgb(230, 100, 100);
+}
+
+.started {
+	background: var(--started-color);
+}
+
+.error {
+	background: var(--error-color);
+}
+
+.history {
+	background: var(--history-color);
+}
+
+.imageWrapper {
+	position: relative;
+	overflow: hidden;
+	border-radius: 5px;
+	line-height: 0;
+}
+
+.imageWrapper > img {
+	width: 100%;
+}
+
+.FullScreen > img {
+	position: fixed;
+	z-index: 1;
+	left: 0;
+	top: 0;
+	height: 100%;
+	object-fit: contain;
+	background: rgb(25, 25, 25);
+}
+
+.imageWrapper > div {
+	position: absolute;
+	top: 0;
+	padding: 10px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	line-height: 20px;
+	background: rgba(0, 0, 0, 0.5);
+	opacity: 0;
+}
+
+.imageWrapper:hover > div {
+	opacity: 1;
+}
+
+.imageWrapper > .imageInfo {
+	left: 0;
+	right: 80px;
+	color: rgba(230, 230, 230, 0.7);
+}
+
+.imageWrapper > .imageInfo:hover {
+	color: rgb(230, 230, 230);
+}
+
+.imageWrapper > .imageRemove {
+	right: 0;
+	width: 80px;
+	color: rgba(230, 100, 100, 0.7);
+}
+
+.imageWrapper > .imageRemove:hover {
+	color: rgb(230, 100, 100);
+}

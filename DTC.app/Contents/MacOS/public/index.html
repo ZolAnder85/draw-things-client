@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+	<title>Draw Things Control</title>
+	<link rel="stylesheet" href="layout.css" />
+	<link rel="stylesheet" href="theme.css" />
+	<link rel="stylesheet" href="special.css" />
+	<link rel="stylesheet" href="custom.css" />
+</head>
+<body>
+	<div class="options" id="parameters">
+		<div class="group">
+			<div class="row">
+				<button id="generate" class="main">generate</button>
+			</div>
+			<div class="row">
+				<textarea rows="8" placeholder="positive prompt" DTTarget="prompt" DTType="string"></textarea>
+			</div>
+		</div>
+		<div collapsible class="group">
+			<h2>Basic Parameters</h2>
+			<div class="row">
+				<textarea rows="5" placeholder="negative prompt" DTTarget="negative_prompt" DTType="string"></textarea>
+			</div>
+			<div class="row">
+				<label for="model">model</label>
+				<select id="model" DTTarget="model" DTType="string">
+					<option value="lcm_ssd_1b_1_0_f16.ckpt">LCM SSD-1B 1.0</option>
+					<option value="sdxl_turbo_1_0_f16.ckpt">SDXL Turbo 1.0</option>
+					<option value="zamix_rv_base_f32.ckpt">ZAMix RV Base</option>
+					<option value="zamix_rv_fast_f16.ckpt">ZAMix RV Fast</option>
+					<option value="zamix_rv_ultra_f16.ckpt">ZAMix RV Ultra</option>
+					<option value="zamix_ds_base_f32.ckpt">ZAMix DS Base</option>
+					<option value="zamix_ds_fast_f16.ckpt">ZAMix DS Fast</option>
+					<option value="zamix_ds_ultra_f16.ckpt">ZAMix DS Ultra</option>
+					<option value="realistic_vision_5_1_base_f16.ckpt">Realistic Vision 5.1 Base</option>
+					<option value="realistic_vision_5_1_fast_f16.ckpt">Realistic Vision 5.1 Fast</option>
+					<option value="realistic_vision_5_1_ultra_f16.ckpt">Realistic Vision 5.1 Ultra</option>
+					<option value="cyberrealistic_classic_2_0_base_f16.ckpt">CyberRealistic Classic 1.6 Base</option>
+					<option value="cyberrealistic_classic_2_0_base_f16.ckpt">CyberRealistic Classic 2.0 Base</option>
+					<option value="cyberrealistic_classic_2_0_fast_f16.ckpt">CyberRealistic Classic 2.0 Fast</option>
+					<option value="cyberrealistic_classic_2_0_ultra_f16.ckpt">CyberRealistic Classic 2.0 Ultra</option>
+					<option value="dreamshaper_8_0_base_f16.ckpt">DreamShaper 8.0 Base</option>
+					<option value="dreamshaper_8_0_fast_f16.ckpt">DreamShaper 8.0 Fast</option>
+					<option value="dreamshaper_8_0_ultra_f16.ckpt">DreamShaper 8.0 Ultra</option>
+				</select>
+			</div>
+			<div class="row">
+				<label for="sampler">sampler</label>
+				<select id="sampler" DTTarget="sampler" DTType="string">
+					<option value="DDIM">DDIM</option>
+					<option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
+					<option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
+					<option value="Euler a">Euler Ancestral</option>
+					<option value="DPM++ SDE Substep">DPM++ SDE Substep</option>
+					<option value="Euler A Substep">Euler A Substep</option>
+					<option value="LCM">LCM</option>
+					<option value="TCD">TCD</option>
+				</select>
+			</div>
+			<div class="row">
+				<label for="guidance">guidance</label>
+				<input id="guidance" type="number" type="number" min="0" step="0.1" value="5" DTTarget="guidance_scale" DTType="float" />
+			</div>
+			<div class="row">
+				<label for="steps">steps</label>
+				<input id="steps" type="number" min="1" step="1" value="20" DTTarget="steps" DTType="int" />
+			</div>
+			<div class="row">
+				<label for="seed">seed</label>
+				<input id="seed" type="number" min="-1" step="1" value="-1" DTTarget="seed" DTType="int" />
+			</div>
+			<div class="row">
+				<label for="width">width</label>
+				<input id="width" type="number" min="128" max="2048" step="32" value="1152" DTTarget="width" DTType="int" />
+			</div>
+			<div class="row">
+				<label for="height">height</label>
+				<input id="height" type="number" min="128" max="2048" step="32" value="768" DTTarget="height" DTType="int" />
+			</div>
+		</div>
+		<div collapsible class="group">
+			<h2>advanced parameters</h2>
+			<div class="row">
+				<label for="shift">shift</label>
+				<input id="shift" type="number" type="number" min="0.25" max="2.5" step="0.05" value="1" DTTarget="shift" DTType="float" />
+			</div>
+			<div class="row">
+				<label for="SSS">SSS</label>
+				<input id="SSS" type="number" type="number" min="0" max="1" step="0.05" value="0.3" DTTarget="stochastic_sampling_gamma" DTType="float" />
+			</div>
+			<div class="row">
+				<label for="refinerModel">refiner model</label>
+				<select id="refinerModel" DTTarget="refiner_model" DTType="string">
+					<option value=null>disabled</option>
+					<option value="lcm_ssd_1b_1_0_f16.ckpt">LCM SSD-1B 1.0</option>
+					<option value="sdxl_turbo_1_0_f16.ckpt">SDXL Turbo 1.0</option>
+					<option value="zamix_rv_base_f32.ckpt">ZAMix RV Base</option>
+					<option value="zamix_rv_fast_f16.ckpt">ZAMix RV Fast</option>
+					<option value="zamix_rv_ultra_f16.ckpt">ZAMix RV Ultra</option>
+					<option value="zamix_ds_base_f32.ckpt">ZAMix DS Base</option>
+					<option value="zamix_ds_fast_f16.ckpt">ZAMix DS Fast</option>
+					<option value="zamix_ds_ultra_f16.ckpt">ZAMix DS Ultra</option>
+					<option value="realistic_vision_5_1_base_f16.ckpt">Realistic Vision 5.1 Base</option>
+					<option value="realistic_vision_5_1_fast_f16.ckpt">Realistic Vision 5.1 Fast</option>
+					<option value="realistic_vision_5_1_ultra_f16.ckpt">Realistic Vision 5.1 Ultra</option>
+					<option value="cyberrealistic_classic_2_0_base_f16.ckpt">CyberRealistic Classic 1.6 Base</option>
+					<option value="cyberrealistic_classic_2_0_base_f16.ckpt">CyberRealistic Classic 2.0 Base</option>
+					<option value="cyberrealistic_classic_2_0_fast_f16.ckpt">CyberRealistic Classic 2.0 Fast</option>
+					<option value="cyberrealistic_classic_2_0_ultra_f16.ckpt">CyberRealistic Classic 2.0 Ultra</option>
+					<option value="dreamshaper_8_0_base_f16.ckpt">DreamShaper 8.0 Base</option>
+					<option value="dreamshaper_8_0_fast_f16.ckpt">DreamShaper 8.0 Fast</option>
+					<option value="dreamshaper_8_0_ultra_f16.ckpt">DreamShaper 8.0 Ultra</option>
+				</select>
+			</div>
+			<div class="row">
+				<label for="refinerStart">refiner start</label>
+				<input id="refinerStart" type="number" min="0" max="1" step="0.05" value="0.5" DTTarget="refiner_start" DTType="float" />
+			</div>
+			<div class="row">
+				<label for="HRFEnabled">HRF enabled</label>
+				<input id="HRFEnabled" type="checkbox" DTTarget="hires_fix" DTType="bool" />
+			</div>
+			<div class="row">
+				<label for="HRFWidth">HRF width</label>
+				<input id="HRFWidth" type="number" min="128" max="2048" step="32" value="768" DTTarget="hires_fix_width" DTType="int" />
+			</div>
+			<div class="row">
+				<label for="HRFHeight">HRF height</label>
+				<input id="HRFHeight" type="number" min="128" max="2048" step="32" value="512" DTTarget="hires_fix_height" DTType="int" />
+			</div>
+			<div class="row">
+				<label for="HRFStrength">HRF strength</label>
+				<input id="HRFStrength" type="number" min="0" max="1" step="0.01" value="0.5" DTTarget="hires_fix_strength" DTType="float" />
+			</div>
+			<div class="row">
+				<label for="clipSkip">CLIP skip</label>
+				<input id="clipSkip" type="number" min="1" step="1" value="1" DTTarget="clip_skip" DTType="int" />
+			</div>
+		</div>
+	</div>
+	<div class="content" id="images">
+	</div>
+	<script src="main.js">
+	</script>
+</body>
+</html>

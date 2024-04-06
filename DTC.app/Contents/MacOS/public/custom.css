@@ -1,0 +1,41 @@
+:root {
+	--margin-size: 10px;
+	--group-color: transparent;
+	--inset-normal: rgb(55, 55, 55);
+	--inset-hover: rgb(50, 50, 50);
+	--outset-normal: rgb(65, 65, 65);
+	--outset-hover: rgb(73, 73, 73);
+	--blue-normal: rgb(50, 80, 130);
+	--blue-hover: rgb(60, 90, 145);
+	--text-normal: rgb(190, 190, 190);
+	--text-dim: rgb(170, 170, 170);
+}
+
+@media (prefers-color-scheme: light) {
+	:root {
+		--background: rgb(130, 130, 130);
+		--options-color: rgb(180, 180, 180);
+		--group-color: transparent;
+		--inset-normal: rgb(235, 235, 235);
+		--inset-hover: rgb(245, 245, 245);
+		--outset-normal: rgba(210, 210, 210);
+		--outset-hover: rgb(200, 200, 200);
+		--blue-normal: rgb(85, 135, 235);
+		--blue-hover: rgb(100, 150, 250);
+		--text-normal: rgb(15, 15, 15);
+		--text-dim: rgb(35, 35, 35);
+		--scroll-track: rgb(150, 150, 150);
+		--scroll-normal: rgba(200, 200, 200);
+		--scroll-hover: rgba(230, 230, 230);
+		--textarea-normal: rgba(185, 185, 185);
+		--textarea-hover: rgba(160, 160, 160);
+	}
+}
+
+.group {
+	margin: 0px;
+}
+
+.group > h2:first-child {
+	margin-top: 0;
+}
