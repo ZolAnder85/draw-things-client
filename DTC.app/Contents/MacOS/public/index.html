@@ -16,17 +16,28 @@
 				<button id="generate" class="main">generate</button>
 			</div>
 			<div class="row">
-				<textarea rows="8" placeholder="positive prompt" DTTarget="prompt" DTType="string"></textarea>
+				<textarea rows="5" placeholder="positive prompt" SDTarget="prompt" SDType="string"></textarea>
 			</div>
 		</div>
 		<div collapsible class="group">
-			<h2>Basic Parameters</h2>
+			<h2>Generation</h2>
 			<div class="row">
-				<textarea rows="5" placeholder="negative prompt" DTTarget="negative_prompt" DTType="string"></textarea>
+				<textarea rows="3" placeholder="negative prompt" SDTarget="negative_prompt" SDType="string"></textarea>
 			</div>
 			<div class="row">
-				<label for="model">model</label>
-				<select id="model" DTTarget="model" DTType="string">
+				<label for="seed">seed</label>
+				<input id="seed" type="number" min="1" step="1" value="35880" SDTarget="seed" SDType="int" />
+			</div>
+			<div class="row">
+				<label for="randomize">randomize</label>
+				<input id="randomize" type="checkbox" />
+			</div>
+		</div>
+		<div collapsible class="group">
+			<h2>Model</h2>
+			<div class="row">
+				<label for="model">base model</label>
+				<select id="model" SDTarget="model" SDType="string">
 					<option value="lcm_ssd_1b_1_0_f16.ckpt">LCM SSD-1B 1.0</option>
 					<option value="sdxl_turbo_1_0_f16.ckpt">SDXL Turbo 1.0</option>
 					<option value="zamix_rv_base_f32.ckpt">ZAMix RV Base</option>
@@ -48,52 +59,8 @@
 				</select>
 			</div>
 			<div class="row">
-				<label for="sampler">sampler</label>
-				<select id="sampler" DTTarget="sampler" DTType="string">
-					<option value="DDIM">DDIM</option>
-					<option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
-					<option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
-					<option value="Euler a">Euler Ancestral</option>
-					<option value="DPM++ SDE Substep">DPM++ SDE Substep</option>
-					<option value="Euler A Substep">Euler A Substep</option>
-					<option value="LCM">LCM</option>
-					<option value="TCD">TCD</option>
-				</select>
-			</div>
-			<div class="row">
-				<label for="guidance">guidance</label>
-				<input id="guidance" type="number" type="number" min="0" step="0.1" value="5" DTTarget="guidance_scale" DTType="float" />
-			</div>
-			<div class="row">
-				<label for="steps">steps</label>
-				<input id="steps" type="number" min="1" step="1" value="20" DTTarget="steps" DTType="int" />
-			</div>
-			<div class="row">
-				<label for="seed">seed</label>
-				<input id="seed" type="number" min="-1" step="1" value="-1" DTTarget="seed" DTType="int" />
-			</div>
-			<div class="row">
-				<label for="width">width</label>
-				<input id="width" type="number" min="128" max="2048" step="32" value="1152" DTTarget="width" DTType="int" />
-			</div>
-			<div class="row">
-				<label for="height">height</label>
-				<input id="height" type="number" min="128" max="2048" step="32" value="768" DTTarget="height" DTType="int" />
-			</div>
-		</div>
-		<div collapsible class="group">
-			<h2>advanced parameters</h2>
-			<div class="row">
-				<label for="shift">shift</label>
-				<input id="shift" type="number" type="number" min="0.25" max="2.5" step="0.05" value="1" DTTarget="shift" DTType="float" />
-			</div>
-			<div class="row">
-				<label for="SSS">SSS</label>
-				<input id="SSS" type="number" type="number" min="0" max="1" step="0.05" value="0.3" DTTarget="stochastic_sampling_gamma" DTType="float" />
-			</div>
-			<div class="row">
 				<label for="refinerModel">refiner model</label>
-				<select id="refinerModel" DTTarget="refiner_model" DTType="string">
+				<select id="refinerModel" SDTarget="refiner_model" SDType="string">
 					<option value=null>disabled</option>
 					<option value="lcm_ssd_1b_1_0_f16.ckpt">LCM SSD-1B 1.0</option>
 					<option value="sdxl_turbo_1_0_f16.ckpt">SDXL Turbo 1.0</option>
@@ -115,29 +82,78 @@
 					<option value="dreamshaper_8_0_ultra_f16.ckpt">DreamShaper 8.0 Ultra</option>
 				</select>
 			</div>
-			<div class="row">
+			<div class="row" combined>
 				<label for="refinerStart">refiner start</label>
-				<input id="refinerStart" type="number" min="0" max="1" step="0.05" value="0.5" DTTarget="refiner_start" DTType="float" />
+				<input id="refinerStart" type="range" min=0 max=1 step=0.05 value=0.5 />
+				<input type="number" SDTarget="refiner_start" SDType="float" />
+			</div>
+		</div>
+		<div collapsible class="group">
+			<h2>Sampling</h2>
+			<div class="row">
+				<label for="sampler">sampler</label>
+				<select id="sampler" SDTarget="sampler" SDType="string">
+					<option value="DDIM">DDIM</option>
+					<option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
+					<option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
+					<option value="Euler a">Euler Ancestral</option>
+					<option value="DPM++ SDE Substep">DPM++ SDE Substep</option>
+					<option value="Euler A Substep">Euler A Substep</option>
+					<option value="LCM">LCM</option>
+					<option value="TCD">TCD</option>
+				</select>
+			</div>
+			<div class="row" combined>
+				<label for="guidance">guidance</label>
+				<input id="guidance" type="range" min="0" max="20" step="0.1" value="5" />
+				<input type="number" SDTarget="guidance_scale" SDType="float" />
+			</div>
+			<div class="row" combined>
+				<label for="steps">steps</label>
+				<input id="steps" type="range" min="0" max="50" step="1" value="20" />
+				<input type="number" SDTarget="steps" SDType="int" />
+			</div>
+			<div class="row" combined>
+				<label for="shift">shift</label>
+				<input id="shift" type="range" min="0.25" max="2.5" step="0.05" value="1" />
+				<input type="number" SDTarget="shift" SDType="float" />
+			</div>
+			<div class="row" combined>
+				<label for="SSS">SSS</label>
+				<input id="SSS" type="range" min="0" max="1" step="0.05" value="0.3" />
+				<input type="number" SDTarget="stochastic_sampling_gamma" SDType="float" />
+			</div>
+		</div>
+		<div collapsible class="group">
+			<h2>Resolution</h2>
+			<div class="row" combined>
+				<label for="width">width</label>
+				<input id="width" type="range" min="128" max="2048" step="64" value="1152" />
+				<input type="number" SDTarget="width" SDType="int" />
+			</div>
+			<div class="row" combined>
+				<label for="height">height</label>
+				<input id="height" type="range" min="128" max="2048" step="64" value="768" />
+				<input type="number" SDTarget="height" SDType="int" />
 			</div>
 			<div class="row">
 				<label for="HRFEnabled">HRF enabled</label>
-				<input id="HRFEnabled" type="checkbox" DTTarget="hires_fix" DTType="bool" />
+				<input id="HRFEnabled" type="checkbox" SDTarget="hires_fix" SDType="bool" />
 			</div>
-			<div class="row">
+			<div class="row" combined>
 				<label for="HRFWidth">HRF width</label>
-				<input id="HRFWidth" type="number" min="128" max="2048" step="32" value="768" DTTarget="hires_fix_width" DTType="int" />
+				<input id="HRFWidth" type="range" min="128" max="2048" step="64" value="768" />
+				<input type="number" SDTarget="hires_fix_width" SDType="int" />
 			</div>
-			<div class="row">
+			<div class="row" combined>
 				<label for="HRFHeight">HRF height</label>
-				<input id="HRFHeight" type="number" min="128" max="2048" step="32" value="512" DTTarget="hires_fix_height" DTType="int" />
+				<input id="HRFHeight" type="range" min="128" max="2048" step="64" value="512" />
+				<input type="number" SDTarget="hires_fix_height" SDType="int" />
 			</div>
-			<div class="row">
+			<div class="row" combined>
 				<label for="HRFStrength">HRF strength</label>
-				<input id="HRFStrength" type="number" min="0" max="1" step="0.01" value="0.5" DTTarget="hires_fix_strength" DTType="float" />
-			</div>
-			<div class="row">
-				<label for="clipSkip">CLIP skip</label>
-				<input id="clipSkip" type="number" min="1" step="1" value="1" DTTarget="clip_skip" DTType="int" />
+				<input id="HRFStrength" type="range" min=0 max=1 step=0.05 value=0.5 />
+				<input type="number" SDTarget="hires_fix_strength" SDType="float" />
 			</div>
 		</div>
 	</div>

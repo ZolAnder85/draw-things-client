@@ -278,40 +278,6 @@ GenTask.createHistoryWrapper = function(seconds, taskData, index) {
 	return result;
 };
 
-const TaskFactory = new function() {
-	let seed = 35880;
-
-	function setSeed(value) {
-		if (value) {
-			seed = value;
-		} else {
-			seed = 35880;
-		}
-	}
-
-	function nextSeed() {
-		seed = seed ^ (seed << 13);
-		seed = seed ^ (seed >> 17);
-		seed = seed ^ (seed << 5);
-		return seed >>> 0;
-	}
-
-	function createOne(taskData, prompt) {
-		taskData = { ...taskData, prompt };
-		if (taskData.seed < 0) {
-			taskData.seed = nextSeed();
-		} else {
-			setSeed(taskData.seed);
-		}
-		return new GenTask(taskData);
-	}
-
-	this.createAll = taskData => {
-		Communication.updateHistory(taskData);
-		return taskData.prompt.trim().split("\n\n").map(prompt => createOne(taskData, prompt));
-	};
-}
-
 const DTControl = new function() {
 	const defaults = {
 		strength: 1,
@@ -321,8 +287,8 @@ const DTControl = new function() {
 		aesthetic_score: 6,
 		negative_aesthetic_score: 2.5,
 		zero_negative_prompt: false,
-		num_frames: 20,
-		fps: 5,
+		num_frames: 21,
+		fps: 7,
 		motion_scale: 127,
 		guiding_frame_noise: 0.02,
 		start_frame_guidance: 1,
@@ -336,13 +302,13 @@ const DTControl = new function() {
 	};
 
 	const imageContainer = document.getElementById("images");
-	const inputArray = document.querySelectorAll("[DTTarget]");
+	const inputArray = document.querySelectorAll("[SDTarget]");
 
 	function generateData() {
 		const data = { ...defaults };
 		for (input of inputArray) {
-			const key = input.getAttribute("DTTarget");
-			const type = input.getAttribute("DTType");
+			const key = input.getAttribute("SDTarget");
+			const type = input.getAttribute("SDType");
 			switch (type) {
 				case "bool":
 					data[key] = input.checked;
@@ -365,21 +331,23 @@ const DTControl = new function() {
 
 	function applyData(data) {
 		for (input of inputArray) {
-			const key = input.getAttribute("DTTarget");
-			const type = input.getAttribute("DTType");
-			switch (type) {
-				case "bool":
-					input.checked = data[key];
-					break;
-				case "int":
-					input.value = data[key].toFixed(0);
-					break;
-				case "float":
-					input.value = Number(data[key].toFixed(2));
-					break;
-				case "string":
-					input.value = data[key];
-					break;
+			const key = input.getAttribute("SDTarget");
+			if (key in data) {
+				const type = input.getAttribute("SDType");
+				switch (type) {
+					case "bool":
+						input.checked = data[key];
+						break;
+					case "int":
+						input.value = data[key].toFixed(0);
+						break;
+					case "float":
+						input.value = Number(data[key].toFixed(2));
+						break;
+					case "string":
+						input.value = data[key];
+						break;
+				}
 			}
 		}
 	}
@@ -431,11 +399,25 @@ const DTControl = new function() {
 	}
 
 	const generateButton = document.getElementById("generate");
+	const randomizeCheckbox = document.getElementById("randomize");
 	const groupArray = document.querySelectorAll("[collapsible]");
+	const rowArray = document.querySelectorAll("[combined]");
 
 	function initInterface() {
 		generateButton.addEventListener("click", () => {
-			queue.push(...TaskFactory.createAll(generateData()));
+			const taskData = generateData();
+			Communication.updateHistory(taskData);
+			let seed = taskData.seed >>> 0;
+			for (const prompt of taskData.prompt.trim().split("\n\n")) {
+				queue.push(new GenTask({ ...taskData, seed, prompt }));
+				if (randomizeCheckbox.checked) {
+					seed = seed ^ (seed << 13);
+					seed = seed ^ (seed >> 17);
+					seed = seed ^ (seed << 5);
+					seed = seed >>> 0;
+				}
+			}
+			applyData({ seed });
 			if (waiting) {
 				executeAll();
 			}
@@ -449,6 +431,21 @@ const DTControl = new function() {
 					group.classList.add("collapsed")
 				}
 				event.stopPropagation();
+			});
+		}
+
+		for (const row of rowArray) {
+			const slider = row.children[1];
+			const numeric = row.children[2];
+			numeric.min = slider.min;
+			numeric.max = slider.max;
+			numeric.step = slider.step;
+			numeric.value = slider.value;
+			slider.addEventListener("input", event => {
+				numeric.value = slider.value;
+			});
+			numeric.addEventListener("input", event => {
+				slider.value = numeric.value;
 			});
 		}
 	}

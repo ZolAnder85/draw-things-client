@@ -1,8 +1,8 @@
 :root {
 	--options-width: 350px;
 	--margin-size: 8px;
-	--label-width: 150px;
-	--input-width: 50px;
+	--label-width: 110px;
+	--input-width: 55px;
 }
 
 * {
@@ -116,4 +116,8 @@ button {
 	overflow: hidden;
 	white-space: pre;
 	text-overflow: ellipsis;
+}
+
+input[type=range] {
+	overflow: initial;
 }
