@@ -1,0 +1,7 @@
+{
+	"compilerOptions": {
+		"sourceMap": false,
+		"removeComments": true,
+		"target": "ES2018"
+	}
+}
