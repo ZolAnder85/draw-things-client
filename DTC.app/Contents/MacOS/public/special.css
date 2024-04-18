@@ -1,24 +1,12 @@
-.started {
-	background: rgb(35, 70, 35);
-}
-
-.error {
-	background: rgb(100, 35, 35);
-}
-
-.history {
-	background: rgb(35, 50, 70);
-}
-
 :root {
-	--started-color: rgb(35, 70, 35);
+	--running-color: rgb(35, 70, 35);
 	--error-color: rgb(100, 35, 35);
 	--history-color: rgb(35, 50, 70);
 }
 
 @media (prefers-color-scheme: light) {
 	:root {
-		--started-color: rgb(60, 100, 60);
+		--running-color: rgb(60, 100, 60);
 		--error-color: rgb(120, 60, 60);
 		--history-color: rgb(60, 80, 120);
 	}
@@ -40,51 +28,28 @@
 
 /* images */
 
-.placeHolder {
+.itemWrapper {
 	padding: 10px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: pre;
 	line-height: 25px;
-	color: rgba(230, 230, 230, 0.7);
 	background: rgb(35, 35, 35);
 	border-radius: 5px;
 }
 
-.placeHolder:hover {
-	color: rgb(230, 230, 230);
-}
-
-.itemWrapper {
-	position: relative;
-	overflow: hidden;
-	border-radius: 5px;
-	line-height: 0;
-}
-
-.itemWrapper > div {
-	position: absolute;
-	top: 0;
-	padding: 10px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	line-height: 25px;
-}
-
 .itemWrapper > .itemContent {
-	left: 0;
-	right: 80px;
-	height: 100%;
+	display: inline;
 	color: rgba(230, 230, 230, 0.7);
 }
 
-.itemWrapper > .itemContent:hover {
+.itemWrapper:hover > .itemContent {
 	color: rgb(230, 230, 230);
 }
 
 .itemWrapper > .itemRemove {
-	right: 0;
-	width: 80px;
+	float: right;
+	display: inline;
 	color: rgba(230, 100, 100, 0.7);
 }
 
@@ -92,8 +57,8 @@
 	color: rgb(230, 100, 100);
 }
 
-.started {
-	background: var(--started-color);
+.running {
+	background: var(--running-color);
 }
 
 .error {

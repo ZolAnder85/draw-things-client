@@ -98,7 +98,8 @@ html {
 	width: var(--label-width);
 }
 
-.row > input {
+.row > input,
+.row > select {
 	width: var(--input-width);
 }
 

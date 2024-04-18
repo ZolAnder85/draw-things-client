@@ -2,6 +2,10 @@
 	"compilerOptions": {
 		"sourceMap": false,
 		"removeComments": true,
-		"target": "ES2018"
-	}
+		"target": "ES2018",
+		"outFile": "../DTC.app/Contents/MacOS/public/SDControl.js"
+	},
+	"files": [
+		"SDControl.ts"
+	]
 }

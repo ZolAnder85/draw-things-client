@@ -308,7 +308,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 ::-webkit-scrollbar-thumb {
-	padding: 5px;
+	border: 5px solid transparent;
 	border-radius: 7px;
 	background-clip: content-box;
 	background-color: var(--scroll-normal);
