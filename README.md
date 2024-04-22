@@ -1,7 +1,7 @@
 # DrawThingsControl
 
 author: @ZolAnder
-version: beta 0.9.1
+version: beta 0.10.1
 
 Web UI and server app for controlling Draw Things from anywhere on the local network.
 This is a working name which I may change later.
