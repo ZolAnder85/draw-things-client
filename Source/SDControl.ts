@@ -1,6 +1,10 @@
 /// <reference path="SDConnector.ts" />
 /// <reference path="GenTask.ts" />
 
+// TODO:
+// Model names handling.
+// Add LoRA support.
+
 namespace SDControl {
 	const defaults = {
 		strength: 1,
@@ -24,8 +28,9 @@ namespace SDControl {
 		negative_prompt_for_image_prior: true
 	};
 
-	const inputs: any = document.querySelectorAll("[SDTarget]");
-	const container = document.getElementById("images");
+	let inputs;
+	let container;
+
 	const queue = [];
 	let waiting = true;
 
@@ -53,7 +58,7 @@ namespace SDControl {
 	}
 
 	function createTaskData(): any {
-		const taskData: any = { ...defaults };
+		const taskData = { ...defaults };
 		for (const input of inputs) {
 			const key = input.getAttribute("SDTarget");
 			const type = input.getAttribute("SDType");
@@ -72,8 +77,6 @@ namespace SDControl {
 					break;
 			}
 		}
-		taskData.original_width = taskData.target_width = taskData.negative_original_width = taskData.width;
-		taskData.original_height = taskData.target_height = taskData.negative_original_height = taskData.height;
 		return taskData;
 	}
 
@@ -119,11 +122,7 @@ namespace SDControl {
 		queue.splice(index, 1);
 	}
 
-	function initInterface() {
-		const generateButton = document.getElementById("generate") as HTMLButtonElement;
-		const randomizeCheckBox = document.getElementById("randomize") as HTMLInputElement;
-		generateButton.addEventListener("click", () => addTask(randomizeCheckBox.checked));
-
+	function initCollapsibleGroups() {
 		const groups = document.querySelectorAll("[collapsible]");
 		for (const group of groups) {
 			group.firstElementChild.addEventListener("click", event => {
@@ -135,11 +134,15 @@ namespace SDControl {
 				event.stopPropagation();
 			});
 		}
+	}
 
+	function initCombinedInputs() {
 		const rows = document.querySelectorAll("[combined]");
 		for (const row of rows) {
 			const slider = row.children[1] as HTMLInputElement;
 			const numeric = row.children[2] as HTMLInputElement;
+			slider.setAttribute("SDTarget", numeric.getAttribute("SDTarget"));
+			slider.setAttribute("SDType", numeric.getAttribute("SDType"));
 			numeric.min = slider.min;
 			numeric.max = slider.max;
 			numeric.step = slider.step;
@@ -151,6 +154,14 @@ namespace SDControl {
 				slider.value = numeric.value;
 			});
 		}
+	}
+
+	function initControlInterface() {
+		inputs = document.querySelectorAll("[SDTarget]");
+		container = document.getElementById("images");
+		const generateButton = document.getElementById("generate") as HTMLButtonElement;
+		const randomizeCheckBox = document.getElementById("randomize") as HTMLInputElement;
+		generateButton.addEventListener("click", () => addTask(randomizeCheckBox.checked));
 	}
 
 	async function loadParameters() {
@@ -172,11 +183,9 @@ namespace SDControl {
 		}
 	}
 
-	export async function initAll() {
-		initInterface();
-		await loadParameters();
-		await loadHistory();
-	}
+	initCollapsibleGroups();
+	initCombinedInputs();
+	initControlInterface();
+	loadParameters();
+	loadHistory();
 }
-
-SDControl.initAll();

@@ -3,23 +3,23 @@
 namespace TaskUtil {
 	function formatWaiting(taskData: any): string {
 		return `waiting\n${taskData.seed}\n${taskData.prompt}`;
-	};
+	}
 
 	function formatRunning(taskData: any, seconds: number): string {
-		return `${seconds} seconds\n${taskData.seed}\n${taskData.prompt}`;
-	};
+		return `${seconds.toFixed(0)} seconds\n${taskData.seed}\n${taskData.prompt}`;
+	}
 
 	function formatError(taskData: any): string {
 		return `error\n${taskData.seed}\n${taskData.prompt}`;
-	};
+	}
 
 	function formatResult(taskData: any, seconds: number): string {
-		return `${seconds} seconds | ${taskData.seed} | ${taskData.prompt}`;
-	};
+		return `${seconds.toFixed(1)} seconds | ${taskData.seed} | ${taskData.prompt}`;
+	}
 
 	function formatAspect(taskData: any): string {
 		return String(taskData.width / taskData.height);
-	};
+	}
 
 	export function createWaitingWrapper(container: HTMLElement, taskData: any, paramsCallback: Function, removeCallback: Function): HTMLElement {
 		const result = document.createElement("div");
@@ -121,7 +121,7 @@ namespace TaskUtil {
 
 		const info = document.createElement("div");
 		info.classList.add("imageInfo");
-		info.textContent = formatResult(genData.taskData, genData.seconds);
+		info.textContent = formatResult(genData.taskData, genData.genTime / 1000);
 		result.appendChild(info);
 
 		info.addEventListener("click", event => {

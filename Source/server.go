@@ -7,58 +7,63 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strconv"
+	"time"
 )
+
+// data types
 
 type TaskData map[string]interface{}
 
-func taskDataFromBytes(bytes []byte) TaskData {
-	var result TaskData
+func taskDataFromBytes(bytes []byte) (result TaskData) {
 	json.Unmarshal(bytes, & result)
-	return result
+	return
 }
 
 type ResponseData struct {
 	Images []string `json:"images"`
 }
 
-func responseDataFromBytes(bytes []byte) ResponseData {
-	var result ResponseData
+func responseDataFromBytes(bytes []byte) (result ResponseData) {
 	json.Unmarshal(bytes, & result)
-	return result
+	return
 }
 
 type GenData struct {
 	ImageURL string `json:"imageURL"`
 	TaskData TaskData `json:"taskData"`
-	Seconds int `json:"seconds"`
+	GenTime int `json:"genTime"`
 	ID int `json:"ID"`
 }
 
 func saveGenData(data GenData, path string) {
 	bytes, _ := json.MarshalIndent(data, "", "\t")
-	os.WriteFile(path, bytes, 0600)
+	os.WriteFile(path, bytes, 0700)
 }
 
 func saveImage(encodedImage string, path string) {
 	decodedImage, _ := base64.StdEncoding.DecodeString(encodedImage)
-	os.WriteFile(path, decodedImage, 0600)
+	os.WriteFile(path, decodedImage, 0700)
 }
 
-// TODO: Return empty array instead of nil.
 func genListFromFile(path string) []GenData {
 	var result []GenData
 	bytes, _ := os.ReadFile(path)
 	json.Unmarshal(bytes, & result)
+	if result == nil {
+		return []GenData{}
+	}
 	return result
 }
 
-func bytesFromGenList(genList []GenData) []byte {
-	bytes, _ := json.Marshal(genList)
-	return bytes
+func bytesFromGenList(genList []GenData) (result []byte) {
+	result, _ = json.Marshal(genList)
+	return
 }
 
 func saveGenList(genList []GenData, path string) {
@@ -66,59 +71,42 @@ func saveGenList(genList []GenData, path string) {
 	os.WriteFile(path, bytes, 0700)
 }
 
-// TODO: Store this in a variable.
-func publicPath() string {
-	executable, error := os.Executable()
-	if error == nil {
-		directory := filepath.Dir(executable);
-		return filepath.Join(directory, "public");
-	}
-	return "public";
-}
+// paths for saving
 
-// TODO: Store this in a variable.
-func resultsPath() string {
-	executable, error := os.Executable()
-	if error == nil {
-		directory := filepath.Dir(executable);
-		return filepath.Join(directory, "results");
-	}
-	return "results";
-}
-
-// TODO: Store this in a variable.
 func historyPath() string {
-	return resultsPath() + "/history.json"
+	return fmt.Sprintf("%v/history.json", resultsPath)
 }
 
 func dataPath(ID int) string {
-	return resultsPath() + "/" + fmt.Sprintf("%08d", ID) + ".json"
+	return fmt.Sprintf("%v/%05d.json", resultsPath, ID)
 }
 
 func imagePath(ID int) string {
-	return resultsPath() + "/" + fmt.Sprintf("%08d", ID) + ".png"
+	return fmt.Sprintf("%v/%05d.png", resultsPath, ID)
 }
 
 func imageURL(ID int) string {
-	return "results/" + fmt.Sprintf("%08d", ID) + ".png"
+	return fmt.Sprintf("results/%05d.png?%05d", ID, rand.Intn(100000))
 }
 
-type ResponseConverter func(requestBody []byte, responseBody []byte) []byte
+// response converters
 
-func dummyResponseConverter(requestBody []byte, responseBody []byte) []byte {
+type ResponseConverter func(requestBody []byte, responseBody []byte, genTime int) []byte
+
+func dummyResponseConverter(requestBody []byte, responseBody []byte, genTime int) []byte {
 	return responseBody;
 }
 
-func saveResult(encodedTask []byte, encodedImage string, ID int) GenData {
-	imageURL := imageURL(ID)
+func saveResult(encodedTask []byte, encodedImage string, genTime int, ID int) GenData {
+	imageURL := imageURL(ID);
 	taskData := taskDataFromBytes(encodedTask)
-	genData := GenData { imageURL, taskData, 0, ID }
+	genData := GenData { imageURL, taskData, genTime, ID }
 	saveGenData(genData, dataPath(ID))
 	saveImage(encodedImage, imagePath(ID))
 	return genData
 }
 
-func generationConverter(requestBody []byte, responseBody []byte) []byte {
+func generationConverter(requestBody []byte, responseBody []byte, genTime int) []byte {
 	historyData := genListFromFile(historyPath())
 	ID := 0
 	for _, genData := range historyData {
@@ -130,7 +118,8 @@ func generationConverter(requestBody []byte, responseBody []byte) []byte {
 	responseData := responseDataFromBytes(responseBody)
 	for _, encodedImage := range responseData.Images {
 		ID++
-		genData := saveResult(requestBody, encodedImage, ID)
+		genTime := genTime / len(responseData.Images)
+		genData := saveResult(requestBody, encodedImage, genTime, ID)
 		historyData = append(historyData, genData)
 		resultData = append(resultData, genData)
 	}
@@ -138,10 +127,21 @@ func generationConverter(requestBody []byte, responseBody []byte) []byte {
 	return bytesFromGenList(resultData);
 }
 
-// TODO: Return empty array instead of nil.
+// reqest converter
+
+type RequestConverter func(requestBody []byte) []byte
+
+func dummyRequestConverter(requestBody []byte) []byte {
+	return requestBody
+}
+
 func getHistoryConverter(requestBody []byte) []byte {
-	historyBytes, _ := os.ReadFile(historyPath())
-	return historyBytes
+	var result []byte
+	result, _ = os.ReadFile(historyPath())
+	if result == nil {
+		return []byte{}
+	}
+	return result
 }
 
 func removeGenerationConverter(requestBody []byte) []byte {
@@ -172,12 +172,6 @@ func clearHistoryConverter(requestBody []byte) []byte {
 	return []byte{}
 }
 
-type RequestConverter func(requestBody []byte) []byte
-
-func dummyRequestConverter(requestBody []byte) []byte {
-	return requestBody
-}
-
 func checkError(err error, serverResponse http.ResponseWriter, status int, message string) bool {
 	if err == nil {
 		return false
@@ -188,6 +182,7 @@ func checkError(err error, serverResponse http.ResponseWriter, status int, messa
 
 func createTargetHandler(requestConverter RequestConverter, responseConverter ResponseConverter, targetURL string) http.HandlerFunc {
 	return func(serverResponse http.ResponseWriter, serverRequest * http.Request) {
+		start := time.Now()
 		requestBody, err := io.ReadAll(serverRequest.Body)
 		if checkError(err, serverResponse, http.StatusInternalServerError, "Error reading request body.") {
 			return
@@ -206,7 +201,9 @@ func createTargetHandler(requestConverter RequestConverter, responseConverter Re
 		if checkError(err, serverResponse, http.StatusInternalServerError, "Error reading response body.") {
 			return
 		}
-		convertedResponseBody := responseConverter(requestBody, responseBody)
+		delta := time.Since(start)
+		genTime := delta.Milliseconds()
+		convertedResponseBody := responseConverter(requestBody, responseBody, int(genTime))
 		serverResponse.Write(convertedResponseBody)
 	}
 }
@@ -222,17 +219,28 @@ func createSimpleHandler(requestConverter RequestConverter) http.HandlerFunc {
 	}
 }
 
+// main function
+
+var webAppPath string
+
+var resultsPath string
+
 func main() {
 	serverPort := flag.String("serverPort", "8080", "port to run the server")
 	targetPort := flag.String("targetPort", "7860", "port of Draw Things")
 
 	flag.Parse()
 
-	publicServer := http.FileServer(http.Dir(publicPath()))
-	http.Handle("/", publicServer)
+	executable, _ := os.Executable()
+	webAppPath = filepath.Dir(executable) + "/../Resources"
+	currentUser, _ := user.Current()
+	resultsPath = currentUser.HomeDir + "/DTC"
+	os.MkdirAll(resultsPath, 0700)
+	rand.Seed(time.Now().UnixNano())
 
-	// TODO: Think about this.
-	resultsServer := http.FileServer(http.Dir(resultsPath()))
+	publicServer := http.FileServer(http.Dir(webAppPath))
+	http.Handle("/", publicServer)
+	resultsServer := http.FileServer(http.Dir(resultsPath))
 	resultsStrip := http.StripPrefix("/results/", resultsServer)
 	http.Handle("/results/", resultsStrip)
 

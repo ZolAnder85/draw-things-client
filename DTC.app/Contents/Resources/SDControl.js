@@ -1,19 +1,54 @@
 var SDConnector;
 (function (SDConnector) {
+    function sanitize(taskData) {
+        if (taskData.hires_fix == false || taskData.hires_fix_width == 0 || taskData.hires_fix_height == 0) {
+            taskData.hires_fix = false;
+            delete taskData.hires_fix_width;
+            delete taskData.hires_fix_height;
+        }
+        return taskData;
+    }
     async function execute(location, method = "GET", body = undefined) {
         const response = await fetch(location, { method, body });
         return response.json();
     }
     async function getParameters() {
-        return execute("/parameters");
+        const parameters = sanitize(await execute("/parameters"));
+        if (parameters.loras) {
+            let lora = parameters.loras[0];
+            if (lora) {
+                parameters.lora_1_model = lora.file;
+                parameters.lora_1_weight = lora.weight;
+            }
+            lora = parameters.loras[1];
+            if (lora) {
+                parameters.lora_2_model = lora.file;
+                parameters.lora_2_weight = lora.weight;
+            }
+        }
+        return parameters;
     }
     SDConnector.getParameters = getParameters;
     async function getHistory() {
         return execute("/get-history");
     }
     SDConnector.getHistory = getHistory;
-    async function generate(genData) {
-        return execute("/generate", "POST", JSON.stringify(genData));
+    async function generate(taskData) {
+        const loras = [];
+        if (taskData.lora_1_model) {
+            loras.push({ file: taskData.lora_1_model, weight: taskData.lora_1_weight });
+        }
+        if (taskData.lora_2_model) {
+            loras.push({ file: taskData.lora_2_model, weight: taskData.lora_2_weight });
+        }
+        const parameters = { ...taskData, loras };
+        delete parameters.lora_1_model;
+        delete parameters.lora_1_weight;
+        delete parameters.lora_2_model;
+        delete parameters.lora_2_weight;
+        parameters.original_width = parameters.target_width = parameters.negative_original_width = parameters.width;
+        parameters.original_height = parameters.target_height = parameters.negative_original_height = parameters.height;
+        return execute("/generate", "POST", JSON.stringify(sanitize(parameters)));
     }
     SDConnector.generate = generate;
     async function removeGeneration(ID) {
@@ -30,23 +65,18 @@ var TaskUtil;
     function formatWaiting(taskData) {
         return `waiting\n${taskData.seed}\n${taskData.prompt}`;
     }
-    ;
     function formatRunning(taskData, seconds) {
-        return `${seconds} seconds\n${taskData.seed}\n${taskData.prompt}`;
+        return `${seconds.toFixed(0)} seconds\n${taskData.seed}\n${taskData.prompt}`;
     }
-    ;
     function formatError(taskData) {
         return `error\n${taskData.seed}\n${taskData.prompt}`;
     }
-    ;
     function formatResult(taskData, seconds) {
-        return `${seconds} seconds | ${taskData.seed} | ${taskData.prompt}`;
+        return `${seconds.toFixed(1)} seconds | ${taskData.seed} | ${taskData.prompt}`;
     }
-    ;
     function formatAspect(taskData) {
         return String(taskData.width / taskData.height);
     }
-    ;
     function createWaitingWrapper(container, taskData, paramsCallback, removeCallback) {
         const result = document.createElement("div");
         result.classList.add("itemWrapper");
@@ -131,7 +161,7 @@ var TaskUtil;
         result.appendChild(image);
         const info = document.createElement("div");
         info.classList.add("imageInfo");
-        info.textContent = formatResult(genData.taskData, genData.seconds);
+        info.textContent = formatResult(genData.taskData, genData.genTime / 1000);
         result.appendChild(info);
         info.addEventListener("click", event => {
             paramsCallback(genData.taskData);
@@ -206,8 +236,8 @@ var SDControl;
         image_prior_steps: 5,
         negative_prompt_for_image_prior: true
     };
-    const inputs = document.querySelectorAll("[SDTarget]");
-    const container = document.getElementById("images");
+    let inputs;
+    let container;
     const queue = [];
     let waiting = true;
     function applyParameters(parameters) {
@@ -252,8 +282,6 @@ var SDControl;
                     break;
             }
         }
-        taskData.original_width = taskData.target_width = taskData.negative_original_width = taskData.width;
-        taskData.original_height = taskData.target_height = taskData.negative_original_height = taskData.height;
         return taskData;
     }
     function addTask(randomize) {
@@ -295,10 +323,7 @@ var SDControl;
         const index = queue.find(genTask => genTask.taskData == taskData);
         queue.splice(index, 1);
     }
-    function initInterface() {
-        const generateButton = document.getElementById("generate");
-        const randomizeCheckBox = document.getElementById("randomize");
-        generateButton.addEventListener("click", () => addTask(randomizeCheckBox.checked));
+    function initCollapsibleGroups() {
         const groups = document.querySelectorAll("[collapsible]");
         for (const group of groups) {
             group.firstElementChild.addEventListener("click", event => {
@@ -311,10 +336,14 @@ var SDControl;
                 event.stopPropagation();
             });
         }
+    }
+    function initCombinedInputs() {
         const rows = document.querySelectorAll("[combined]");
         for (const row of rows) {
             const slider = row.children[1];
             const numeric = row.children[2];
+            slider.setAttribute("SDTarget", numeric.getAttribute("SDTarget"));
+            slider.setAttribute("SDType", numeric.getAttribute("SDType"));
             numeric.min = slider.min;
             numeric.max = slider.max;
             numeric.step = slider.step;
@@ -326,6 +355,13 @@ var SDControl;
                 slider.value = numeric.value;
             });
         }
+    }
+    function initControlInterface() {
+        inputs = document.querySelectorAll("[SDTarget]");
+        container = document.getElementById("images");
+        const generateButton = document.getElementById("generate");
+        const randomizeCheckBox = document.getElementById("randomize");
+        generateButton.addEventListener("click", () => addTask(randomizeCheckBox.checked));
     }
     async function loadParameters() {
         try {
@@ -346,11 +382,9 @@ var SDControl;
             console.warn("Unable to load history.");
         }
     }
-    async function initAll() {
-        initInterface();
-        await loadParameters();
-        await loadHistory();
-    }
-    SDControl.initAll = initAll;
+    initCollapsibleGroups();
+    initCombinedInputs();
+    initControlInterface();
+    loadParameters();
+    loadHistory();
 })(SDControl || (SDControl = {}));
-SDControl.initAll();

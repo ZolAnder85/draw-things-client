@@ -40,10 +40,10 @@
 				<select id="model" SDTarget="model" SDType="string">
 					<option value="lcm_ssd_1b_1_0_f16.ckpt">LCM SSD-1B 1.0</option>
 					<option value="sdxl_turbo_1_0_f16.ckpt">SDXL Turbo 1.0</option>
-					<option value="zamix_rv_base_f32.ckpt">ZAMix RV Base</option>
+					<option value="zamix_rv_base_f16.ckpt">ZAMix RV Base</option>
 					<option value="zamix_rv_fast_f16.ckpt">ZAMix RV Fast</option>
 					<option value="zamix_rv_ultra_f16.ckpt">ZAMix RV Ultra</option>
-					<option value="zamix_ds_base_f32.ckpt">ZAMix DS Base</option>
+					<option value="zamix_ds_base_f16.ckpt">ZAMix DS Base</option>
 					<option value="zamix_ds_fast_f16.ckpt">ZAMix DS Fast</option>
 					<option value="zamix_ds_ultra_f16.ckpt">ZAMix DS Ultra</option>
 					<option value="realistic_vision_5_1_base_f16.ckpt">Realistic Vision 5.1 Base</option>
@@ -61,13 +61,13 @@
 			<div class="row">
 				<label for="refinerModel">refiner model</label>
 				<select id="refinerModel" SDTarget="refiner_model" SDType="string">
-					<option value=null>disabled</option>
+					<option value="null">disabled</option>
 					<option value="lcm_ssd_1b_1_0_f16.ckpt">LCM SSD-1B 1.0</option>
 					<option value="sdxl_turbo_1_0_f16.ckpt">SDXL Turbo 1.0</option>
-					<option value="zamix_rv_base_f32.ckpt">ZAMix RV Base</option>
+					<option value="zamix_rv_base_f16.ckpt">ZAMix RV Base</option>
 					<option value="zamix_rv_fast_f16.ckpt">ZAMix RV Fast</option>
 					<option value="zamix_rv_ultra_f16.ckpt">ZAMix RV Ultra</option>
-					<option value="zamix_ds_base_f32.ckpt">ZAMix DS Base</option>
+					<option value="zamix_ds_base_f16.ckpt">ZAMix DS Base</option>
 					<option value="zamix_ds_fast_f16.ckpt">ZAMix DS Fast</option>
 					<option value="zamix_ds_ultra_f16.ckpt">ZAMix DS Ultra</option>
 					<option value="realistic_vision_5_1_base_f16.ckpt">Realistic Vision 5.1 Base</option>
@@ -84,8 +84,52 @@
 			</div>
 			<div class="row" combined>
 				<label for="refinerStart">refiner start</label>
-				<input id="refinerStart" type="range" min=0 max=1 step=0.05 value=0.5 />
+				<input id="refinerStart" type="range" min="0" max="1" step="0.05" value="0.5" />
 				<input type="number" SDTarget="refiner_start" SDType="float" />
+			</div>
+			<div class="row">
+				<label for="LoRA1Model">lora 1 model</label>
+				<select id="LoRA1Model" SDTarget="lora_1_model" SDType="string">
+					<option value="">disabled</option>
+					<option value="lcm_sd_15_lora_f16.ckpt">LCM SD-15 LoRA</option>
+					<option value="tcd_sd_15_lora_lora_f16.ckpt">TCD SD-15 LoRA</option>
+					<option value="lcm_sdxl_lora_lora_f16.ckpt">LCM-SDXL-LoRA</option>
+					<option value="tcd_sdxl_lora_f16.ckpt">TCD SDXL LoRA</option>
+					<option value="lightning_lora_f16.ckpt">Lightning LoRA</option>
+					<option value="sdxl_noise_os_lora_f16.ckpt">SDXL Noise OS</option>
+					<option value="add_brightness_lora_f16.ckpt">Add Brightness</option>
+					<option value="to8_contrast_lora_f16.ckpt">TO8 Contrast</option>
+					<option value="epi_noise_os_lora_f16.ckpt">EPI Noise OS</option>
+					<option value="schmanzy_sdxl_lora_f16.ckpt">Schmanzy SDXL</option>
+					<option value="papercut_sdxl_lora_f16.ckpt">Papercut SDX</option>
+				</select>
+			</div>
+			<div class="row" combined>
+				<label for="LoRA1Weight">lora 1 weight</label>
+				<input id="LoRA1Weight" type="range" min="-2" max="2" step="0.05" value="1" />
+				<input type="number" SDTarget="lora_1_weight" SDType="float" />
+			</div>
+			<div class="row">
+				<label for="LoRA2Model">lora 2 model</label>
+				<select id="LoRA2Model" SDTarget="lora_2_model" SDType="string">
+					<option value="">disabled</option>
+					<option value="lcm_sd_15_lora_f16.ckpt">LCM SD-15 LoRA</option>
+					<option value="tcd_sd_15_lora_lora_f16.ckpt">TCD SD-15 LoRA</option>
+					<option value="lcm_sdxl_lora_lora_f16.ckpt">LCM-SDXL-LoRA</option>
+					<option value="tcd_sdxl_lora_f16.ckpt">TCD SDXL LoRA</option>
+					<option value="lightning_lora_f16.ckpt">Lightning LoRA</option>
+					<option value="sdxl_noise_os_lora_f16.ckpt">SDXL Noise OS</option>
+					<option value="add_brightness_lora_f16.ckpt">Add Brightness</option>
+					<option value="to8_contrast_lora_f16.ckpt">TO8 Contrast</option>
+					<option value="epi_noise_os_lora_f16.ckpt">EPI Noise OS</option>
+					<option value="schmanzy_sdxl_lora_f16.ckpt">Schmanzy SDXL</option>
+					<option value="papercut_sdxl_lora_f16.ckpt">Papercut SDX</option>
+				</select>
+			</div>
+			<div class="row" combined>
+				<label for="LoRA2Weight">lora 2 weight</label>
+				<input id="LoRA2Weight" type="range" min="-2" max="2" step="0.05" value="1" />
+				<input type="number" SDTarget="lora_2_weight" SDType="float" />
 			</div>
 		</div>
 		<div collapsible class="group">
@@ -152,7 +196,7 @@
 			</div>
 			<div class="row" combined>
 				<label for="HRFStrength">HRF strength</label>
-				<input id="HRFStrength" type="range" min=0 max=1 step=0.05 value=0.5 />
+				<input id="HRFStrength" type="range" min="0" max="1" step="0.05" value="0.5" />
 				<input type="number" SDTarget="hires_fix_strength" SDType="float" />
 			</div>
 		</div>
