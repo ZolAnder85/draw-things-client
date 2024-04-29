@@ -1,0 +1,9 @@
+{
+	"name": "DTCWebUI",
+	"short_name": "DTCWebUI",
+	"description": "Draw Things Control Web UI",
+	"start_url": ".",
+	"display": "standalone",
+	"theme_color": "rgb(35, 35, 35)",
+	"background_color": "rgb(25, 25, 25)"
+}

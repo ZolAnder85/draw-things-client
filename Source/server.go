@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strconv"
@@ -39,11 +40,6 @@ type GenData struct {
 	TaskData TaskData `json:"taskData"`
 	GenTime int `json:"genTime"`
 	ID int `json:"ID"`
-}
-
-func saveGenData(data GenData, path string) {
-	bytes, _ := json.MarshalIndent(data, "", "\t")
-	os.WriteFile(path, bytes, 0700)
 }
 
 func saveImage(encodedImage string, path string) {
@@ -77,6 +73,14 @@ func historyPath() string {
 	return fmt.Sprintf("%v/history.json", resultsPath)
 }
 
+func settingsPath() string {
+	return fmt.Sprintf("%v/settings.json", resultsPath)
+}
+
+func defaulsPath() string {
+	return fmt.Sprintf("%v/defaults.json", webAppPath)
+}
+
 func dataPath(ID int) string {
 	return fmt.Sprintf("%v/%05d.json", resultsPath, ID)
 }
@@ -98,12 +102,10 @@ func dummyResponseConverter(requestBody []byte, responseBody []byte, genTime int
 }
 
 func saveResult(encodedTask []byte, encodedImage string, genTime int, ID int) GenData {
-	imageURL := imageURL(ID);
-	taskData := taskDataFromBytes(encodedTask)
-	genData := GenData { imageURL, taskData, genTime, ID }
-	saveGenData(genData, dataPath(ID))
 	saveImage(encodedImage, imagePath(ID))
-	return genData
+	imageURL := imageURL(ID)
+	taskData := taskDataFromBytes(encodedTask)
+	return GenData { imageURL, taskData, genTime, ID }
 }
 
 func generationConverter(requestBody []byte, responseBody []byte, genTime int) []byte {
@@ -139,7 +141,7 @@ func getHistoryConverter(requestBody []byte) []byte {
 	var result []byte
 	result, _ = os.ReadFile(historyPath())
 	if result == nil {
-		return []byte{}
+		return []byte("[]")
 	}
 	return result
 }
@@ -171,6 +173,17 @@ func clearHistoryConverter(requestBody []byte) []byte {
 	os.Remove(historyPath())
 	return []byte{}
 }
+
+func settingsRequestConverter(requestBody []byte) []byte {
+	var result []byte
+	result, _ = os.ReadFile(settingsPath())
+	if result == nil {
+		return []byte("{}")
+	}
+	return result
+}
+
+// common handling
 
 func checkError(err error, serverResponse http.ResponseWriter, status int, message string) bool {
 	if err == nil {
@@ -235,7 +248,8 @@ func main() {
 	webAppPath = filepath.Dir(executable) + "/../Resources"
 	currentUser, _ := user.Current()
 	resultsPath = currentUser.HomeDir + "/DTC"
-	os.MkdirAll(resultsPath, 0700)
+	exec.Command("mkdir", "-p", resultsPath).Run()
+	exec.Command("cp", "-n", defaulsPath(), settingsPath()).Run()
 	rand.Seed(time.Now().UnixNano())
 
 	publicServer := http.FileServer(http.Dir(webAppPath))
@@ -247,12 +261,14 @@ func main() {
 	parametersTarget := "http://127.0.0.1:" + * targetPort
 	generationTarget := parametersTarget + "/sdapi/v1/txt2img"
 
+	// TODO: Add models to options if missing.
 	http.HandleFunc("/parameters", createTargetHandler(dummyRequestConverter, dummyResponseConverter, parametersTarget))
 	http.HandleFunc("/generate", createTargetHandler(dummyRequestConverter, generationConverter, generationTarget))
 
 	http.HandleFunc("/get-history", createSimpleHandler(getHistoryConverter))
 	http.HandleFunc("/remove-generation", createSimpleHandler(removeGenerationConverter))
 	http.HandleFunc("/clear-history", createSimpleHandler(clearHistoryConverter))
+	http.HandleFunc("/settings", createSimpleHandler(settingsRequestConverter))
 
 	http.ListenAndServe(":" + * serverPort, nil)
 }

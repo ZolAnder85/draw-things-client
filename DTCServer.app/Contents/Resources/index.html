@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<title>Draw Things Control Web UI</title>
+	<link rel="manifest" href="manifest.json" />
+	<link rel="stylesheet" href="layout.css" />
+	<link rel="stylesheet" href="theme.css" />
+	<link rel="stylesheet" href="special.css" />
+	<link rel="stylesheet" href="custom.css" />
+</head>
+<body>
+	<div class="options" id="parameters">
+		<div class="group">
+			<div class="row">
+				<button id="generate" class="main">generate</button>
+			</div>
+			<div class="row">
+				<textarea id="positive" placeholder="positive prompt" SDTarget="prompt" SDType="string"></textarea>
+			</div>
+		</div>
+		<div collapsible class="collapsed group">
+			<h2>Generation</h2>
+			<div class="row">
+				<textarea id="negative" placeholder="negative prompt" SDTarget="negative_prompt" SDType="string"></textarea>
+			</div>
+			<div class="row">
+				<label for="seed">seed</label>
+				<input id="seed" type="number" min="1" step="1" value="35880" SDTarget="seed" SDType="int" />
+			</div>
+			<div class="row">
+				<label for="randomize">randomize</label>
+				<input id="randomize" type="checkbox" />
+			</div>
+		</div>
+		<div collapsible class="collapsed group">
+			<h2>Model</h2>
+			<div class="row">
+				<label for="model">base model</label>
+				<select id="model" SDTarget="model" SDType="string">
+				</select>
+			</div>
+			<div class="row">
+				<label for="refinerModel">refiner model</label>
+				<select id="refinerModel" SDTarget="refiner_model" SDType="string">
+					<option value="null">disabled</option>
+				</select>
+			</div>
+			<div class="row" combined>
+				<label for="refinerStart">refiner start</label>
+				<input id="refinerStart" type="range" min="0" max="1" step="0.05" value="0.5" />
+				<input type="number" SDTarget="refiner_start" SDType="float" />
+			</div>
+			<div class="row">
+				<label for="LoRA0Model">lora 1 model</label>
+				<select id="LoRA0Model" SDTarget="loras/0/file" SDType="string">
+					<option value="null">disabled</option>
+				</select>
+			</div>
+			<div class="row" combined>
+				<label for="LoRA0Weight">lora 1 weight</label>
+				<input id="LoRA0Weight" type="range" min="-2" max="2" step="0.05" value="1" />
+				<input type="number" SDTarget="loras/0/weight" SDType="float" />
+			</div>
+			<div class="row">
+				<label for="LoRA1Model">lora 2 model</label>
+				<select id="LoRA1Model" SDTarget="loras/1/file" SDType="string">
+					<option value="null">disabled</option>
+				</select>
+			</div>
+			<div class="row" combined>
+				<label for="LoRA1Weight">lora 2 weight</label>
+				<input id="LoRA1Weight" type="range" min="-2" max="2" step="0.05" value="1" />
+				<input type="number" SDTarget="loras/1/weight" SDType="float" />
+			</div>
+		</div>
+		<div collapsible class="collapsed group">
+			<h2>Sampling</h2>
+			<div class="row">
+				<label for="sampler">sampler</label>
+				<select id="sampler" SDTarget="sampler" SDType="string">
+					<option value="DDIM">DDIM</option>
+					<option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
+					<option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
+					<option value="Euler a">Euler Ancestral</option>
+					<option value="DPM++ SDE Substep">DPM++ SDE Substep</option>
+					<option value="Euler A Substep">Euler A Substep</option>
+					<option value="LCM">LCM</option>
+					<option value="TCD">TCD</option>
+					<option value="DPM++ SDE Trailing">DPM++ SDE Trailing</option>
+					<option value="Euler A Trailing">Euler A Trailing</option>
+				</select>
+			</div>
+			<div class="row" combined>
+				<label for="guidance">guidance</label>
+				<input id="guidance" type="range" min="0" max="20" step="0.1" value="5" />
+				<input type="number" SDTarget="guidance_scale" SDType="float" />
+			</div>
+			<div class="row" combined>
+				<label for="steps">steps</label>
+				<input id="steps" type="range" min="0" max="50" step="1" value="20" />
+				<input type="number" SDTarget="steps" SDType="int" />
+			</div>
+			<div class="row" combined>
+				<label for="shift">shift</label>
+				<input id="shift" type="range" min="0.25" max="2.5" step="0.05" value="1" />
+				<input type="number" SDTarget="shift" SDType="float" />
+			</div>
+			<div class="row" combined>
+				<label for="SSS">SSS</label>
+				<input id="SSS" type="range" min="0" max="1" step="0.05" value="0.3" />
+				<input type="number" SDTarget="stochastic_sampling_gamma" SDType="float" />
+			</div>
+		</div>
+		<div collapsible class="collapsed group">
+			<h2>Resolution</h2>
+			<div class="row" combined>
+				<label for="width">width</label>
+				<input id="width" type="range" min="128" max="2048" step="64" value="1152" />
+				<input type="number" SDTarget="width" SDType="int" />
+			</div>
+			<div class="row" combined>
+				<label for="height">height</label>
+				<input id="height" type="range" min="128" max="2048" step="64" value="768" />
+				<input type="number" SDTarget="height" SDType="int" />
+			</div>
+			<div class="row">
+				<label for="HRFEnabled">HRF enabled</label>
+				<input id="HRFEnabled" type="checkbox" SDTarget="hires_fix" SDType="bool" />
+			</div>
+			<div class="row" combined>
+				<label for="HRFWidth">HRF width</label>
+				<input id="HRFWidth" type="range" min="128" max="2048" step="64" value="768" />
+				<input type="number" SDTarget="hires_fix_width" SDType="int" />
+			</div>
+			<div class="row" combined>
+				<label for="HRFHeight">HRF height</label>
+				<input id="HRFHeight" type="range" min="128" max="2048" step="64" value="512" />
+				<input type="number" SDTarget="hires_fix_height" SDType="int" />
+			</div>
+			<div class="row" combined>
+				<label for="HRFStrength">HRF strength</label>
+				<input id="HRFStrength" type="range" min="0" max="1" step="0.05" value="0.5" />
+				<input type="number" SDTarget="hires_fix_strength" SDType="float" />
+			</div>
+		</div>
+	</div>
+	<div class="content" id="images">
+	</div>
+	<script src="SDControl.js">
+	</script>
+</body>
+</html>

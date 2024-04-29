@@ -3,7 +3,7 @@
 		"sourceMap": false,
 		"removeComments": true,
 		"target": "ES2018",
-		"outFile": "../DTC.app/Contents/Resources/SDControl.js"
+		"outFile": "../DTCServer.app/Contents/Resources/SDControl.js"
 	},
 	"files": [
 		"SDControl.ts"
