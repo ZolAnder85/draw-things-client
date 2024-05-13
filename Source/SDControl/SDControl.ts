@@ -1,156 +1,98 @@
+/// <reference path="../Library/STDPreprocessor.ts" />
+/// <reference path="SDCommandEngine.ts" />
 /// <reference path="SDConnector.ts" />
 /// <reference path="GenTask.ts" />
+/// <reference path="Catalogue.ts" />
 
-// TODO: Unlimited LoRAs.
 namespace SDControl {
-	const defaults = {
-		strength: 1,
-		seed_mode: "Scale Alike",
-		crop_left: 0,
-		crop_top: 0,
-		aesthetic_score: 6,
-		negative_aesthetic_score: 2.5,
-		zero_negative_prompt: false,
-		num_frames: 21,
-		fps: 7,
-		motion_scale: 127,
-		guiding_frame_noise: 0.02,
-		start_frame_guidance: 1,
-		mask_blur: 5,
-		batch_size: 1,
-		batch_count: 1,
-		clip_weight: 1,
-		image_guidance: 1.5,
-		image_prior_steps: 5,
-		negative_prompt_for_image_prior: true
-	};
-
 	let inputs;
 	let container;
 
 	const queue = [];
 	let waiting = true;
 
-	function applyRaw(parameters: any): void {
+	function applyParameters(parameters: any): void {
 		for (const input of inputs) {
+			let value = parameters;
 			const key = input.getAttribute("SDTarget");
-			if (key in parameters) {
-				const type = input.getAttribute("SDType");
-				switch (type) {
-					case "bool":
-						input.checked = parameters[key];
-						break;
-					case "int":
-						input.value = parameters[key].toFixed(0);
-						break;
-					case "float":
-						input.value = Number(parameters[key].toFixed(2));
-						break;
-					case "string":
-						input.value = parameters[key];
-						break;
+			for (const part of key.split("/")) {
+				if (value) {
+					value = value[part];
 				}
 			}
-		}
-	}
-
-	function applyParameters(parameters: any): void {
-		sanitizeInput(parameters);
-		applyRaw(parameters);
-	}
-
-	function sanitizeInput(parameters: any): void {
-		if (parameters.hires_fix_width == 0) {
-			delete parameters.hires_fix_width;
-			parameters.hires_fix = false;
-		}
-		if (parameters.hires_fix_height == 0) {
-			delete parameters.hires_fix_height;
-			parameters.hires_fix = false;
-		}
-		handleMember(parameters, "loras/0/file", "null");
-		handleMember(parameters, "loras/0/weight", 1);
-		handleMember(parameters, "loras/1/file", "null");
-		handleMember(parameters, "loras/1/weight", 1);
-	}
-
-	function handleMember(parameters: any, key: string, fallback: any): void {
-		let value = parameters;
-		for (const part of key.split("/")) {
-			if (value) {
-				value = value[part];
+			if (value === undefined) {
+				continue;
 			}
-		}
-		if (value) {
-			parameters[key] = value;
-		} else {
-			parameters[key] = fallback;
-		}
-	}
-
-	function createTaskData(): any {
-		const taskData = { ...defaults };
-		for (const input of inputs) {
-			const key = input.getAttribute("SDTarget");
 			const type = input.getAttribute("SDType");
 			switch (type) {
 				case "bool":
-					taskData[key] = input.checked;
+					input.checked = value;
 					break;
 				case "int":
-					taskData[key] = parseInt(input.value);
+					input.value = value.toFixed(0);
 					break;
 				case "float":
-					taskData[key] = parseFloat(input.value);
+					input.value = Number(value.toFixed(2));
 					break;
 				case "string":
-					taskData[key] = input.value;
+					input.value = value || "";
 					break;
 			}
 		}
-		sanitizeOutput(taskData);
+	}
+
+	function createTaskData(): GenParam {
+		const taskData = ParamUtil.duplicateSDGen(defaultGenParam);
+		for (const input of inputs) {
+			let target = taskData;
+			let key = input.getAttribute("SDTarget");
+			const parts = key.split("/");
+			key = parts.pop();
+			for (const part of parts) {
+				target = target[part] = target[part] || {};
+			}
+			const type = input.getAttribute("SDType");
+			switch (type) {
+				case "bool":
+					target[key] = input.checked;
+					break;
+				case "int":
+					target[key] = parseInt(input.value);
+					break;
+				case "float":
+					target[key] = parseFloat(input.value);
+					break;
+				case "string":
+					target[key] = input.value || null;
+					break;
+			}
+		}
 		return taskData;
 	}
 
-	function sanitizeOutput(taskData: any): void {
-		taskData.original_width = taskData.target_width = taskData.negative_original_width = taskData.width;
-		taskData.original_height = taskData.target_height = taskData.negative_original_height = taskData.height;
-		taskData.loras = [];
-		let file = taskData["loras/0/file"];
-		file = file == "null" ? null : file;
-		if (file) {
-			const weight = taskData["loras/0/weight"];
-			taskData.loras.push({ file, weight });
-		}
-		delete taskData["loras/0/file"];
-		delete taskData["loras/0/weight"];
-		file = taskData["loras/1/file"];
-		file = file == "null" ? null : file;
-		if (file) {
-			const weight = taskData["loras/1/weight"];
-			taskData.loras.push({ file, weight });
-		}
-		delete taskData["loras/1/file"];
-		delete taskData["loras/1/weight"];
-	}
+	const preprocessor = new STDPreprocessor()
+	const commandEngine = new SDCommandEngine()
 
-	function addTask(randomize): void {
+	function addAll(randomize: boolean): void {
 		const taskData = createTaskData();
-		let seed = taskData.seed >>> 0;
-		for (const prompt of taskData.prompt.trim().split("\n\n")) {
-			const subData = { ...taskData, seed, prompt };
-			queue.push(new GenTask(container, subData, applyParameters, removeTask, SDConnector.removeGeneration));
-			if (randomize) {
-				seed = seed ^ (seed << 13);
-				seed = seed ^ (seed >> 17);
-				seed = seed ^ (seed << 5);
-				seed = seed >>> 0;
-			}
+		commandEngine.init(taskData, taskData => addTask(taskData));
+		let seed = taskData.seed;
+		preprocessor.init(seed, block => commandEngine.handleBlock(block));
+		const input = cleanString(taskData.positivePrompt);
+		for(const block of input.split(/\n\n+/)) {
+			preprocessor.handleBlock(block);
 		}
-		applyRaw({ seed });
+		if (randomize) {
+			seed = XSRandom.next(seed);
+			applyParameters({ seed });
+		}
 		if (waiting) {
 			executeAll();
 		}
+	}
+
+	export function addTask(taskData: GenParam): void {
+		queue.push(new GenTask(container, taskData, applyParameters, removeTask, SDConnector.removeGeneration));
 	}
 
 	async function executeAll() {
@@ -172,7 +114,7 @@ namespace SDControl {
 		}
 	}
 
-	function removeTask(taskData: any): void {
+	function removeTask(taskData: GenParam): void {
 		const index = queue.find(genTask => genTask.taskData == taskData);
 		queue.splice(index, 1);
 	}
@@ -230,6 +172,14 @@ namespace SDControl {
 		}
 	}
 
+	function initControlInterface() {
+		inputs = document.querySelectorAll("[SDTarget]");
+		container = document.getElementById("images");
+		const generateButton = document.getElementById("generate") as HTMLButtonElement;
+		const randomizeCheckBox = document.getElementById("randomize") as HTMLInputElement;
+		generateButton.addEventListener("click", () => addAll(randomizeCheckBox.checked));
+	}
+
 	async function loadSettings() {
 		try {
 			const settings = await SDConnector.getSettings();
@@ -241,18 +191,22 @@ namespace SDControl {
 			positive.rows = settings.promptLines;
 			const negative = document.getElementById("negative") as HTMLTextAreaElement;
 			negative.rows = settings.negativeLines;
+			modelCatalogue = createCatalogues("models", settings.models);
+			loraCatalogue = createCatalogues("LoRAs", settings.LoRAs);
+			controlCatalogue = createCatalogues("controls", settings.controls);
 		} catch (error) {
 			console.warn("Unable to load settings.");
 			console.trace(error);
 		}
 	}
 
-	function initControlInterface() {
-		inputs = document.querySelectorAll("[SDTarget]");
-		container = document.getElementById("images");
-		const generateButton = document.getElementById("generate") as HTMLButtonElement;
-		const randomizeCheckBox = document.getElementById("randomize") as HTMLInputElement;
-		generateButton.addEventListener("click", () => addTask(randomizeCheckBox.checked));
+	function createCatalogues(name: string, categories: any): CKPTCatalogue {
+		categories = Object.values(categories);
+		let models = { disabled: null };
+		for (const category of categories) {
+			models = { ...models, ...category };
+		}
+		return new CKPTCatalogue(name, models);
 	}
 
 	async function loadParameters() {
@@ -278,8 +232,8 @@ namespace SDControl {
 
 	initCollapsibleGroups();
 	initCombinedInputs();
-	loadSettings();
 	initControlInterface();
+	loadSettings();
 	loadParameters();
 	loadHistory();
 }

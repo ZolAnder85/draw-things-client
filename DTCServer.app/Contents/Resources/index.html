@@ -19,13 +19,13 @@
 				<button id="generate" class="main">generate</button>
 			</div>
 			<div class="row">
-				<textarea id="positive" placeholder="positive prompt" SDTarget="prompt" SDType="string"></textarea>
+				<textarea id="positive" placeholder="positive prompt" SDTarget="positivePrompt" SDType="string"></textarea>
 			</div>
 		</div>
 		<div collapsible class="collapsed group">
 			<h2>Generation</h2>
 			<div class="row">
-				<textarea id="negative" placeholder="negative prompt" SDTarget="negative_prompt" SDType="string"></textarea>
+				<textarea id="negative" placeholder="negative prompt" SDTarget="negativePrompt" SDType="string"></textarea>
 			</div>
 			<div class="row">
 				<label for="seed">seed</label>
@@ -45,35 +45,35 @@
 			</div>
 			<div class="row">
 				<label for="refinerModel">refiner model</label>
-				<select id="refinerModel" SDTarget="refiner_model" SDType="string">
-					<option value="null">disabled</option>
+				<select id="refinerModel" SDTarget="refinerModel" SDType="string">
+					<option value="">disabled</option>
 				</select>
 			</div>
 			<div class="row" combined>
 				<label for="refinerStart">refiner start</label>
 				<input id="refinerStart" type="range" min="0" max="1" step="0.05" value="0.5" />
-				<input type="number" SDTarget="refiner_start" SDType="float" />
+				<input type="number" SDTarget="refinerStart" SDType="float" />
 			</div>
 			<div class="row">
 				<label for="LoRA0Model">lora 1 model</label>
 				<select id="LoRA0Model" SDTarget="loras/0/file" SDType="string">
-					<option value="null">disabled</option>
+					<option value="">disabled</option>
 				</select>
 			</div>
 			<div class="row" combined>
 				<label for="LoRA0Weight">lora 1 weight</label>
-				<input id="LoRA0Weight" type="range" min="-2" max="2" step="0.05" value="1" />
+				<input id="LoRA0Weight" type="range" min="-2" max="2" step="0.05" value="0" />
 				<input type="number" SDTarget="loras/0/weight" SDType="float" />
 			</div>
 			<div class="row">
 				<label for="LoRA1Model">lora 2 model</label>
 				<select id="LoRA1Model" SDTarget="loras/1/file" SDType="string">
-					<option value="null">disabled</option>
+					<option value="">disabled</option>
 				</select>
 			</div>
 			<div class="row" combined>
 				<label for="LoRA1Weight">lora 2 weight</label>
-				<input id="LoRA1Weight" type="range" min="-2" max="2" step="0.05" value="1" />
+				<input id="LoRA1Weight" type="range" min="-2" max="2" step="0.05" value="0" />
 				<input type="number" SDTarget="loras/1/weight" SDType="float" />
 			</div>
 		</div>
@@ -97,7 +97,7 @@
 			<div class="row" combined>
 				<label for="guidance">guidance</label>
 				<input id="guidance" type="range" min="0" max="20" step="0.1" value="5" />
-				<input type="number" SDTarget="guidance_scale" SDType="float" />
+				<input type="number" SDTarget="CFG" SDType="float" />
 			</div>
 			<div class="row" combined>
 				<label for="steps">steps</label>
@@ -112,7 +112,7 @@
 			<div class="row" combined>
 				<label for="SSS">SSS</label>
 				<input id="SSS" type="range" min="0" max="1" step="0.05" value="0.3" />
-				<input type="number" SDTarget="stochastic_sampling_gamma" SDType="float" />
+				<input type="number" SDTarget="SSS" SDType="float" />
 			</div>
 		</div>
 		<div collapsible class="collapsed group">
@@ -129,22 +129,22 @@
 			</div>
 			<div class="row">
 				<label for="HRFEnabled">HRF enabled</label>
-				<input id="HRFEnabled" type="checkbox" SDTarget="hires_fix" SDType="bool" />
+				<input id="HRFEnabled" type="checkbox" SDTarget="hiResFix" SDType="bool" />
 			</div>
 			<div class="row" combined>
 				<label for="HRFWidth">HRF width</label>
 				<input id="HRFWidth" type="range" min="128" max="2048" step="64" value="768" />
-				<input type="number" SDTarget="hires_fix_width" SDType="int" />
+				<input type="number" SDTarget="hiResFixWidth" SDType="int" />
 			</div>
 			<div class="row" combined>
 				<label for="HRFHeight">HRF height</label>
 				<input id="HRFHeight" type="range" min="128" max="2048" step="64" value="512" />
-				<input type="number" SDTarget="hires_fix_height" SDType="int" />
+				<input type="number" SDTarget="hiResFixHeight" SDType="int" />
 			</div>
 			<div class="row" combined>
 				<label for="HRFStrength">HRF strength</label>
 				<input id="HRFStrength" type="range" min="0" max="1" step="0.05" value="0.5" />
-				<input type="number" SDTarget="hires_fix_strength" SDType="float" />
+				<input type="number" SDTarget="hiResFixStrength" SDType="float" />
 			</div>
 		</div>
 	</div>

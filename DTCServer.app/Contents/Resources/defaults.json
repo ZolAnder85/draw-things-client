@@ -1,7 +1,6 @@
 {
 	"promptLines": 5,
 	"negativeLines": 3,
-	"presets": {},
 	"models": {
 		"SDXL": {
 			"SDXL 1.0 Base": "sdxl_1_0_base_f16.ckpt"
@@ -10,6 +9,12 @@
 		}
 	},
 	"LoRAs": {
+		"SDXL": {
+		},
+		"SD-15": {
+		}
+	},
+	"controls": {
 		"SDXL": {
 		},
 		"SD-15": {

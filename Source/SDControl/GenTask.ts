@@ -1,27 +1,28 @@
+/// <reference path="GenParam.ts" />
 /// <reference path="SDConnector.ts" />
 
 namespace TaskUtil {
-	function formatWaiting(taskData: any): string {
-		return `waiting\n${taskData.seed}\n${taskData.prompt}`;
+	function formatWaiting(taskData: GenParam): string {
+		return `waiting\n${taskData.seed}\n${taskData.positivePrompt}`;
 	}
 
-	function formatRunning(taskData: any, seconds: number): string {
-		return `${seconds.toFixed(0)} seconds\n${taskData.seed}\n${taskData.prompt}`;
+	function formatRunning(taskData: GenParam, seconds: number): string {
+		return `${seconds.toFixed(0)} seconds\n${taskData.seed}\n${taskData.positivePrompt}`;
 	}
 
-	function formatError(taskData: any): string {
-		return `error\n${taskData.seed}\n${taskData.prompt}`;
+	function formatError(taskData: GenParam): string {
+		return `error\n${taskData.seed}\n${taskData.positivePrompt}`;
 	}
 
-	function formatResult(taskData: any, seconds: number): string {
-		return `${seconds.toFixed(1)} seconds | ${taskData.seed} | ${taskData.prompt}`;
+	function formatResult(taskData: GenParam, seconds: number): string {
+		return `${seconds.toFixed(1)} seconds | ${taskData.seed} | ${taskData.positivePrompt}`;
 	}
 
-	function formatAspect(taskData: any): string {
+	function formatAspect(taskData: GenParam): string {
 		return String(taskData.width / taskData.height);
 	}
 
-	export function createWaitingWrapper(container: HTMLElement, taskData: any, paramsCallback: Function, removeCallback: Function): HTMLElement {
+	export function createWaitingWrapper(container: HTMLElement, taskData: GenParam, paramsCallback: Function, removeCallback: Function): HTMLElement {
 		const result = document.createElement("div");
 		result.classList.add("itemWrapper");
 		result.style.aspectRatio = formatAspect(taskData);
@@ -50,7 +51,7 @@ namespace TaskUtil {
 		return result;
 	}
 
-	export function createRunninWrapper(taskData: any, paramsCallback: Function): HTMLElement {
+	export function createRunninWrapper(taskData: GenParam, paramsCallback: Function): HTMLElement {
 		const result = document.createElement("div");
 		result.classList.add("itemWrapper");
 		result.classList.add("running");
@@ -81,7 +82,7 @@ namespace TaskUtil {
 		return result;
 	}
 
-	export function createErrorWrapper(container: HTMLElement, taskData: any, paramsCallback: Function): HTMLElement {
+	export function createErrorWrapper(container: HTMLElement, taskData: GenParam, paramsCallback: Function): HTMLElement {
 		const result = document.createElement("div");
 		result.classList.add("itemWrapper");
 		result.classList.add("error");
@@ -157,9 +158,9 @@ class GenTask {
 	public onStart: Function;
 	public onError: Function;
 	public onResult: Function;
-	public taskData: any;
+	public taskData: GenParam;
 
-	public constructor(container: HTMLElement, taskData: any, paramsCallback: any, removeTaskCallback: Function, removeResultCallback: Function) {
+	public constructor(container: HTMLElement, taskData: GenParam, paramsCallback: any, removeTaskCallback: Function, removeResultCallback: Function) {
 		let currentWrapper = TaskUtil.createWaitingWrapper(container, taskData, paramsCallback, removeTaskCallback);
 		container.insertBefore(currentWrapper, container.firstChild);
 

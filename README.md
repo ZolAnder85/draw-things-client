@@ -44,9 +44,11 @@ It can only be shut down by force quitting from the dock or the force quit menu.
 
 # TODO
 
-- Thumbnails and lazy full image loading
-- Reordering history items
+- Thumbnails and lazy image loading
 - Setting paramaters in the prompt
 - Dynamic prompts with wildcards
+- randomize button for seed
+- Reordering history items
 - Image importing
 - Project handling
+- Unlimited LoRAs

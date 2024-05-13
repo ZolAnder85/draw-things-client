@@ -77,12 +77,8 @@ func settingsPath() string {
 	return fmt.Sprintf("%v/settings.json", resultsPath)
 }
 
-func defaulsPath() string {
+func defaultsPath() string {
 	return fmt.Sprintf("%v/defaults.json", webAppPath)
-}
-
-func dataPath(ID int) string {
-	return fmt.Sprintf("%v/%05d.json", resultsPath, ID)
 }
 
 func imagePath(ID int) string {
@@ -167,7 +163,6 @@ func removeGenerationConverter(requestBody []byte) []byte {
 func clearHistoryConverter(requestBody []byte) []byte {
 	historyData := genListFromFile(historyPath())
 	for _, genData := range historyData {
-		os.Remove(dataPath(genData.ID))
 		os.Remove(imagePath(genData.ID))
 	}
 	os.Remove(historyPath())
@@ -235,7 +230,6 @@ func createSimpleHandler(requestConverter RequestConverter) http.HandlerFunc {
 // main function
 
 var webAppPath string
-
 var resultsPath string
 
 func main() {
@@ -249,7 +243,8 @@ func main() {
 	currentUser, _ := user.Current()
 	resultsPath = currentUser.HomeDir + "/DTC"
 	exec.Command("mkdir", "-p", resultsPath).Run()
-	exec.Command("cp", "-n", defaulsPath(), settingsPath()).Run()
+	exec.Command("cp", "-n", defaultsPath(), settingsPath()).Run()
+
 	rand.Seed(time.Now().UnixNano())
 
 	publicServer := http.FileServer(http.Dir(webAppPath))
