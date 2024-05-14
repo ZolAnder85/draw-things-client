@@ -10,7 +10,6 @@
 	<link rel="stylesheet" href="layout.css" />
 	<link rel="stylesheet" href="theme.css" />
 	<link rel="stylesheet" href="special.css" />
-	<link rel="stylesheet" href="custom.css" />
 </head>
 <body>
 	<div class="options" id="parameters">
@@ -40,12 +39,12 @@
 			<h2>Model</h2>
 			<div class="row">
 				<label for="model">base model</label>
-				<select id="model" SDTarget="model" SDType="string">
+				<select id="model" SDTarget="model" SDType="nest">
 				</select>
 			</div>
 			<div class="row">
 				<label for="refinerModel">refiner model</label>
-				<select id="refinerModel" SDTarget="refinerModel" SDType="string">
+				<select id="refinerModel" SDTarget="refinerModel" SDType="nest">
 					<option value="">disabled</option>
 				</select>
 			</div>
@@ -56,7 +55,7 @@
 			</div>
 			<div class="row">
 				<label for="LoRA0Model">lora 1 model</label>
-				<select id="LoRA0Model" SDTarget="loras/0/file" SDType="string">
+				<select id="LoRA0Model" SDTarget="loras/0/file" SDType="nest">
 					<option value="">disabled</option>
 				</select>
 			</div>
@@ -67,7 +66,7 @@
 			</div>
 			<div class="row">
 				<label for="LoRA1Model">lora 2 model</label>
-				<select id="LoRA1Model" SDTarget="loras/1/file" SDType="string">
+				<select id="LoRA1Model" SDTarget="loras/1/file" SDType="nest">
 					<option value="">disabled</option>
 				</select>
 			</div>

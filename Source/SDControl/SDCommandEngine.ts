@@ -23,6 +23,8 @@ class SDCommandEngine extends BaseCommandEngine {
 	public init(taskData: GenParam, handler: GenHandler): void {
 		this.initial = ParamUtil.duplicateSDGen(taskData);
 		this.current = ParamUtil.duplicateSDGen(taskData);
+		this.positive = "";
+		this.negative = "";
 		this.handler = handler;
 	}
 

@@ -1,7 +1,7 @@
 # DrawThingsControl
 
 author: @ZolAnder  
-version: beta 0.10.3
+version: beta 0.10.5
 
 DTCServer and DTCWebUI for controlling Draw Things from anywhere on the local network.
 
@@ -45,10 +45,11 @@ It can only be shut down by force quitting from the dock or the force quit menu.
 # TODO
 
 - Thumbnails and lazy image loading
-- Setting paramaters in the prompt
-- Dynamic prompts with wildcards
 - randomize button for seed
-- Reordering history items
 - Image importing
 - Project handling
 - Unlimited LoRAs
+- double tap or space to zoom image
+- slide up or down or escape to close image
+- slide left or right or arrows to switch image
+- Add back copy-all

@@ -487,6 +487,8 @@ class SDCommandEngine extends BaseCommandEngine {
     init(taskData, handler) {
         this.initial = ParamUtil.duplicateSDGen(taskData);
         this.current = ParamUtil.duplicateSDGen(taskData);
+        this.positive = "";
+        this.negative = "";
         this.handler = handler;
     }
     buildAPIMap() {
@@ -862,17 +864,21 @@ var ParamUtil;
 })(ParamUtil || (ParamUtil = {}));
 var SDConnector;
 (function (SDConnector) {
-    async function execute(location, method = "GET", body = undefined) {
+    async function getResponse(location, method = "GET", body = undefined) {
         const response = await fetch(location, { method, body });
-        return response.json();
+        const result = await response.json();
+        return result;
+    }
+    function sendRequest(location, method = "GET", body = undefined) {
+        fetch(location, { method, body });
     }
     async function getParameters() {
-        const result = await execute("/parameters");
+        const result = await getResponse("/parameters");
         return ParamUtil.fromDTHGen(result);
     }
     SDConnector.getParameters = getParameters;
     async function getHistory() {
-        const result = await execute("/get-history");
+        const result = await getResponse("/get-history");
         for (const item of result) {
             item.taskData = ParamUtil.fromDTHGen(item.taskData);
         }
@@ -881,142 +887,210 @@ var SDConnector;
     SDConnector.getHistory = getHistory;
     async function generate(taskData) {
         const converted = ParamUtil.toDTHGen(taskData);
-        const result = await execute("/generate", "POST", JSON.stringify(converted));
+        const result = await getResponse("/generate", "POST", JSON.stringify(converted));
         for (const item of result) {
             item.taskData = ParamUtil.fromDTHGen(item.taskData);
         }
         return result;
     }
     SDConnector.generate = generate;
-    async function removeGeneration(ID) {
-        return execute("/remove-generation", "POST", ID);
+    function moveGen(ID, movement) {
+        switch (movement) {
+            case 0:
+                return sendRequest("/move-gen-prev", "POST", ID);
+            case 1:
+                return sendRequest("/move-gen-next", "POST", ID);
+        }
     }
-    SDConnector.removeGeneration = removeGeneration;
+    SDConnector.moveGen = moveGen;
+    function removeGen(ID) {
+        sendRequest("/remove-gen", "POST", ID);
+    }
+    SDConnector.removeGen = removeGen;
     async function clearHistory() {
-        return execute("/clear-history");
+        return getResponse("/clear-history");
     }
     SDConnector.clearHistory = clearHistory;
     async function getSettings() {
-        return execute("/settings");
+        return getResponse("/settings");
     }
     SDConnector.getSettings = getSettings;
 })(SDConnector || (SDConnector = {}));
 var TaskUtil;
 (function (TaskUtil) {
-    function formatWaiting(taskData) {
-        return `waiting\n${taskData.seed}\n${taskData.positivePrompt}`;
-    }
-    function formatRunning(taskData, seconds) {
-        return `${seconds.toFixed(0)} seconds\n${taskData.seed}\n${taskData.positivePrompt}`;
-    }
-    function formatError(taskData) {
-        return `error\n${taskData.seed}\n${taskData.positivePrompt}`;
-    }
-    function formatResult(taskData, seconds) {
-        return `${seconds.toFixed(1)} seconds | ${taskData.seed} | ${taskData.positivePrompt}`;
+    function formatContent(taskData, start) {
+        const positiveLine = taskData.positivePrompt.split("\n")[0];
+        const negativeLine = taskData.negativePrompt.split("\n")[0];
+        if (positiveLine) {
+            if (negativeLine) {
+                return `${start}\n${taskData.seed}\n${positiveLine}\n- ${negativeLine}`;
+            }
+            return `${start}\n${taskData.seed}\n${positiveLine}`;
+        }
+        if (negativeLine) {
+            return `${start}\n${taskData.seed}\n- ${negativeLine}`;
+        }
+        return `${start}\n${taskData.seed}`;
     }
     function formatAspect(taskData) {
-        return String(taskData.width / taskData.height);
+        return `${taskData.width} / ${taskData.height}`;
     }
-    function createWaitingWrapper(container, taskData, paramsCallback, removeCallback) {
+    function createDiv(parent, className, textContent, description) {
+        const result = document.createElement("div");
+        result.classList.add(className);
+        result.textContent = textContent;
+        result.title = description;
+        parent.appendChild(result);
+        return result;
+    }
+    function createHeader(container, parent, taskData, moveCallback, removeCallback) {
+        const result = document.createElement("div");
+        result.classList.add("itemHeader");
+        const copyPrompt = createDiv(result, "iconPrompt", "✑", `copy prompts:\n${taskData.positivePrompt}\n- ${taskData.negativePrompt}`);
+        copyPrompt.addEventListener("click", event => {
+            SDControl.applyParameters({
+                positivePrompt: taskData.positivePrompt,
+                negativePrompt: taskData.negativePrompt
+            });
+            event.stopPropagation();
+        });
+        const copySeed = createDiv(result, "iconSeed", "⚅", `copy seed:\n${taskData.seed}`);
+        switch (taskData.seed % 6) {
+            case 1:
+                copySeed.textContent = "⚀";
+                break;
+            case 2:
+                copySeed.textContent = "⚁";
+                break;
+            case 3:
+                copySeed.textContent = "⚂";
+                break;
+            case 4:
+                copySeed.textContent = "⚃";
+                break;
+            case 5:
+                copySeed.textContent = "⚄";
+                break;
+        }
+        copySeed.addEventListener("click", event => {
+            SDControl.applyParameters({
+                seed: taskData.seed
+            });
+            event.stopPropagation();
+        });
+        const copyParam = createDiv(result, "iconParam", "⚙", `copy parameters`);
+        copyParam.addEventListener("click", event => {
+            SDControl.applyParameters({
+                ...taskData,
+                positivePrompt: undefined,
+                negativePrompt: undefined,
+                seed: undefined
+            });
+            event.stopPropagation();
+        });
+        createDiv(result, "iconStretch", "", "");
+        if (moveCallback) {
+            const moveUp = createDiv(result, "iconArrow", "◄", "move forward");
+            moveUp.addEventListener("click", event => {
+                const prev = parent.previousElementSibling;
+                if (prev) {
+                    if (prev.classList.contains("imageWrapper")) {
+                        moveCallback(1);
+                        container.insertBefore(parent, prev);
+                    }
+                    else if (prev.classList.contains("error")) {
+                        container.insertBefore(parent, prev);
+                    }
+                }
+                event.stopPropagation();
+            });
+            const moveDown = createDiv(result, "iconArrow", "►", "move backward");
+            moveDown.addEventListener("click", event => {
+                const next = parent.nextElementSibling;
+                if (next) {
+                    if (next.classList.contains("imageWrapper")) {
+                        moveCallback(0);
+                        container.insertBefore(next, parent);
+                    }
+                    else if (next.classList.contains("error")) {
+                        container.insertBefore(next, parent);
+                    }
+                }
+                event.stopPropagation();
+            });
+        }
+        createDiv(result, "iconSpace", "", "");
+        if (removeCallback) {
+            const remove = createDiv(result, "iconRemove", "✖", "remove");
+            remove.addEventListener("click", event => {
+                container.removeChild(parent);
+                removeCallback();
+                event.stopPropagation();
+            });
+        }
+        return result;
+    }
+    function createWaitingWrapper(container, taskData) {
         const result = document.createElement("div");
         result.classList.add("itemWrapper");
         result.style.aspectRatio = formatAspect(taskData);
-        const remove = document.createElement("text");
-        remove.classList.add("itemRemove");
-        remove.textContent = "remove";
-        result.appendChild(remove);
-        remove.addEventListener("click", event => {
-            container.removeChild(result);
-            removeCallback(taskData);
-            event.stopPropagation();
-        });
+        const header = createHeader(container, result, taskData, null, () => SDControl.removeTask(taskData));
+        result.appendChild(header);
         const content = document.createElement("text");
         content.classList.add("itemContent");
-        content.textContent = formatWaiting(taskData);
+        content.textContent = formatContent(taskData, "waiting");
         result.appendChild(content);
-        result.addEventListener("click", event => {
-            paramsCallback(taskData);
-            event.stopPropagation();
-        });
         return result;
     }
     TaskUtil.createWaitingWrapper = createWaitingWrapper;
-    function createRunninWrapper(taskData, paramsCallback) {
+    function createRunninWrapper(taskData) {
         const result = document.createElement("div");
         result.classList.add("itemWrapper");
         result.classList.add("running");
         result.style.aspectRatio = formatAspect(taskData);
+        const header = createHeader(null, result, taskData, null, null);
+        result.appendChild(header);
         const content = document.createElement("text");
         content.classList.add("itemContent");
         result.appendChild(content);
         let seconds = 0;
-        content.textContent = formatRunning(taskData, seconds);
+        content.textContent = formatContent(taskData, `${seconds.toFixed(0)} seconds`);
         const intervalCallback = () => {
             if (content.isConnected) {
                 ++seconds;
-                content.textContent = formatRunning(taskData, seconds);
+                content.textContent = formatContent(taskData, `${seconds.toFixed(0)} seconds`);
             }
             else {
                 clearInterval(intervalID);
             }
         };
         const intervalID = setInterval(intervalCallback, 1000);
-        result.addEventListener("click", event => {
-            paramsCallback(taskData);
-            event.stopPropagation();
-        });
         return result;
     }
     TaskUtil.createRunninWrapper = createRunninWrapper;
-    function createErrorWrapper(container, taskData, paramsCallback) {
+    function createErrorWrapper(container, taskData) {
         const result = document.createElement("div");
         result.classList.add("itemWrapper");
         result.classList.add("error");
         result.style.aspectRatio = formatAspect(taskData);
-        const remove = document.createElement("text");
-        remove.classList.add("itemRemove");
-        remove.textContent = "remove";
-        result.appendChild(remove);
-        remove.addEventListener("click", event => {
-            container.removeChild(result);
-            event.stopPropagation();
-        });
+        const header = createHeader(container, result, taskData, null, () => { });
+        result.appendChild(header);
         const content = document.createElement("text");
         content.classList.add("itemContent");
-        content.textContent = formatError(taskData);
+        content.textContent = formatContent(taskData, "error");
         result.appendChild(content);
-        result.addEventListener("click", event => {
-            paramsCallback(taskData);
-            event.stopPropagation();
-        });
         return result;
     }
     TaskUtil.createErrorWrapper = createErrorWrapper;
-    function createImageWrapper(container, genData, paramsCallback, removeCallback) {
+    function createImageWrapper(container, genData) {
         const result = document.createElement("div");
         result.classList.add("imageWrapper");
         result.style.aspectRatio = formatAspect(genData.taskData);
+        const header = createHeader(container, result, genData.taskData, (movement) => SDConnector.moveGen(genData.ID, movement), () => SDConnector.removeGen(genData.ID));
+        result.appendChild(header);
         const image = document.createElement("img");
         image.src = genData.imageURL;
         result.appendChild(image);
-        const info = document.createElement("div");
-        info.classList.add("imageInfo");
-        info.textContent = formatResult(genData.taskData, genData.genTime / 1000);
-        result.appendChild(info);
-        info.addEventListener("click", event => {
-            paramsCallback(genData.taskData);
-            event.stopPropagation();
-        });
-        const remove = document.createElement("div");
-        remove.classList.add("imageRemove");
-        remove.textContent = "remove";
-        result.appendChild(remove);
-        remove.addEventListener("click", event => {
-            container.removeChild(result);
-            removeCallback(genData.ID);
-            event.stopPropagation();
-        });
         result.addEventListener("click", event => {
             if (result.classList.contains("FullScreen")) {
                 result.classList.remove("FullScreen");
@@ -1031,22 +1105,22 @@ var TaskUtil;
     TaskUtil.createImageWrapper = createImageWrapper;
 })(TaskUtil || (TaskUtil = {}));
 class GenTask {
-    constructor(container, taskData, paramsCallback, removeTaskCallback, removeResultCallback) {
-        let currentWrapper = TaskUtil.createWaitingWrapper(container, taskData, paramsCallback, removeTaskCallback);
+    constructor(container, taskData) {
+        let currentWrapper = TaskUtil.createWaitingWrapper(container, taskData);
         container.insertBefore(currentWrapper, container.firstChild);
         this.onStart = () => {
-            const nextWrapper = TaskUtil.createRunninWrapper(taskData, paramsCallback);
+            const nextWrapper = TaskUtil.createRunninWrapper(taskData);
             container.replaceChild(nextWrapper, currentWrapper);
             currentWrapper = nextWrapper;
         };
         this.onError = () => {
-            const nextWrapper = TaskUtil.createErrorWrapper(container, taskData, paramsCallback);
+            const nextWrapper = TaskUtil.createErrorWrapper(container, taskData);
             container.replaceChild(nextWrapper, currentWrapper);
             currentWrapper = nextWrapper;
         };
         this.onResult = (genResult) => {
             for (const genData of genResult) {
-                const imageWrapper = TaskUtil.createImageWrapper(container, genData, paramsCallback, removeResultCallback);
+                const imageWrapper = TaskUtil.createImageWrapper(container, genData);
                 container.insertBefore(imageWrapper, currentWrapper);
             }
             container.removeChild(currentWrapper);
@@ -1084,11 +1158,15 @@ var SDControl;
                     input.value = Number(value.toFixed(2));
                     break;
                 case "string":
+                    input.value = value;
+                    break;
+                case "nest":
                     input.value = value || "";
                     break;
             }
         }
     }
+    SDControl.applyParameters = applyParameters;
     function createTaskData() {
         const taskData = ParamUtil.duplicateSDGen(defaultGenParam);
         for (const input of inputs) {
@@ -1111,6 +1189,9 @@ var SDControl;
                     target[key] = parseFloat(input.value);
                     break;
                 case "string":
+                    target[key] = input.value;
+                    break;
+                case "nest":
                     target[key] = input.value || null;
                     break;
             }
@@ -1137,7 +1218,7 @@ var SDControl;
         }
     }
     function addTask(taskData) {
-        queue.push(new GenTask(container, taskData, applyParameters, removeTask, SDConnector.removeGeneration));
+        queue.push(new GenTask(container, taskData));
     }
     SDControl.addTask = addTask;
     async function executeAll() {
@@ -1162,6 +1243,7 @@ var SDControl;
         const index = queue.find(genTask => genTask.taskData == taskData);
         queue.splice(index, 1);
     }
+    SDControl.removeTask = removeTask;
     function initCollapsibleGroups() {
         const groups = document.querySelectorAll("[collapsible]");
         for (const group of groups) {
@@ -1259,7 +1341,7 @@ var SDControl;
     async function loadHistory() {
         try {
             for (const genData of await SDConnector.getHistory()) {
-                const imageWrapper = TaskUtil.createImageWrapper(container, genData, applyParameters, SDConnector.removeGeneration);
+                const imageWrapper = TaskUtil.createImageWrapper(container, genData);
                 container.insertBefore(imageWrapper, container.firstChild);
             }
         }

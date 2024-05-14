@@ -1,16 +1,50 @@
 :root {
+	--margin-size: 10px;
+	--group-color: transparent;
+	--inset-normal: rgb(55, 55, 55);
+	--inset-hover: rgb(50, 50, 50);
+	--outset-normal: rgb(65, 65, 65);
+	--outset-hover: rgb(73, 73, 73);
+	--blue-normal: rgb(50, 80, 130);
+	--blue-hover: rgb(60, 90, 145);
+	--text-normal: rgb(190, 190, 190);
+	--text-dim: rgb(170, 170, 170);
+	--item-width: calc(max(200px, 50px + 20%));
 	--running-color: rgb(35, 70, 35);
 	--error-color: rgb(100, 35, 35);
 	--history-color: rgb(35, 50, 70);
-	--item-width: calc(max(200px, 50px + 20%));
 }
 
 @media (prefers-color-scheme: light) {
 	:root {
+		--background: rgb(130, 130, 130);
+		--options-color: rgb(180, 180, 180);
+		--group-color: transparent;
+		--inset-normal: rgb(235, 235, 235);
+		--inset-hover: rgb(245, 245, 245);
+		--outset-normal: rgba(210, 210, 210);
+		--outset-hover: rgb(200, 200, 200);
+		--blue-normal: rgb(85, 135, 235);
+		--blue-hover: rgb(100, 150, 250);
+		--text-normal: rgb(15, 15, 15);
+		--text-dim: rgb(35, 35, 35);
+		--scroll-track: rgb(150, 150, 150);
+		--scroll-normal: rgba(200, 200, 200);
+		--scroll-hover: rgba(230, 230, 230);
+		--textarea-normal: rgba(185, 185, 185);
+		--textarea-hover: rgba(160, 160, 160);
 		--running-color: rgb(60, 100, 60);
 		--error-color: rgb(120, 60, 60);
 		--history-color: rgb(60, 80, 120);
 	}
+}
+
+.group {
+	margin: 0px;
+}
+
+.group > h2:first-child {
+	margin-top: 0;
 }
 
 .content {
@@ -27,10 +61,9 @@
 	width: var(--item-width);
 }
 
-/* images */
+/* placeholders */
 
 .itemWrapper {
-	padding: 10px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: pre;
@@ -39,24 +72,105 @@
 	border-radius: 5px;
 }
 
+.itemWrapper > .itemHeader {
+	margin-left: 5px;
+	margin-top: 5px;
+	margin-right: 5px;
+	border-radius: 5px;
+	background: rgba(10, 10, 10, 0.3);
+}
+
 .itemWrapper > .itemContent {
-	display: inline;
-	color: rgba(230, 230, 230, 0.7);
+	display: block;
+	padding: 10px;
+	color: rgba(250, 250, 250, 0.7);
 }
 
 .itemWrapper:hover > .itemContent {
-	color: rgb(230, 230, 230);
+	color: rgb(250, 250, 250);
 }
 
-.itemWrapper > .itemRemove {
-	float: right;
-	display: inline;
-	color: rgba(230, 100, 100, 0.7);
+/* images */
+
+.imageWrapper {
+	position: relative;
+	overflow: hidden;
+	border-radius: 5px;
+	line-height: 0;
 }
 
-.itemWrapper > .itemRemove:hover {
-	color: rgb(230, 100, 100);
+.imageWrapper > .itemHeader {
+	position: absolute;
+	left: 5px;
+	top: 5px;
+	right: 5px;
+	border-radius: 5px;
+	background: rgba(20, 20, 20, 0.8);
+	opacity: 0;
+	-webkit-backdrop-filter: blur(22px);
+	   -moz-backdrop-filter: blur(22px);
+	        backdrop-filter: blur(22px);
 }
+
+.imageWrapper:hover > .itemHeader {
+	opacity: 1;
+}
+
+/* icons */
+
+.itemHeader {
+	display: flex;
+	gap: 10px;
+	padding: 8px;
+	line-height: 25px;
+}
+
+.itemHeader > div {
+	color: rgba(250, 250, 250, 0.7);
+}
+
+.itemHeader > div:hover {
+	color: rgb(250, 250, 250);
+}
+
+.itemHeader > .iconRemove {
+	color: rgba(250, 110, 110, 0.7);
+}
+
+.itemHeader > .iconRemove:hover {
+	color: rgb(250, 110, 110);
+}
+
+.iconStretch {
+	flex-grow: 1;
+}
+
+.iconSpace {
+	width: 10px;
+}
+
+.iconPrompt {
+	position: relative;
+	top: 3pt;
+	font-family: "Apple Symbols", Symbol, Arial;
+	font-size: 28pt;
+}
+
+.iconSeed,
+.iconParam {
+	position: relative;
+	top: 2pt;
+	font-family: "Apple Symbols", Symbol, Arial;
+	font-size: 26pt;
+}
+
+.iconArrow,
+.iconRemove {
+	font-family: Arial;
+	font-size: 18pt;
+}
+
+/* other */
 
 .running {
 	background: var(--running-color);
@@ -70,13 +184,6 @@
 	background: var(--history-color);
 }
 
-.imageWrapper {
-	position: relative;
-	overflow: hidden;
-	border-radius: 5px;
-	line-height: 0;
-}
-
 .imageWrapper > img {
 	width: 100%;
 }
@@ -86,43 +193,9 @@
 	z-index: 1;
 	left: 0;
 	top: 0;
+	right: 0;
+	bottom: 0;
 	height: 100%;
 	object-fit: contain;
 	background: rgb(25, 25, 25);
-}
-
-.imageWrapper > div {
-	position: absolute;
-	top: 0;
-	padding: 10px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	line-height: 20px;
-	background: rgba(0, 0, 0, 0.5);
-	opacity: 0;
-}
-
-.imageWrapper:hover > div {
-	opacity: 1;
-}
-
-.imageWrapper > .imageInfo {
-	left: 0;
-	right: 80px;
-	color: rgba(230, 230, 230, 0.7);
-}
-
-.imageWrapper > .imageInfo:hover {
-	color: rgb(230, 230, 230);
-}
-
-.imageWrapper > .imageRemove {
-	right: 0;
-	width: 80px;
-	color: rgba(230, 100, 100, 0.7);
-}
-
-.imageWrapper > .imageRemove:hover {
-	color: rgb(230, 100, 100);
 }

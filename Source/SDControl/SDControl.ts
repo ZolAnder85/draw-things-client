@@ -4,6 +4,7 @@
 /// <reference path="GenTask.ts" />
 /// <reference path="Catalogue.ts" />
 
+// TODO: Function reordering?
 namespace SDControl {
 	let inputs;
 	let container;
@@ -11,7 +12,7 @@ namespace SDControl {
 	const queue = [];
 	let waiting = true;
 
-	function applyParameters(parameters: any): void {
+	export function applyParameters(parameters: any): void {
 		for (const input of inputs) {
 			let value = parameters;
 			const key = input.getAttribute("SDTarget");
@@ -35,6 +36,9 @@ namespace SDControl {
 					input.value = Number(value.toFixed(2));
 					break;
 				case "string":
+					input.value = value;
+					break;
+				case "nest":
 					input.value = value || "";
 					break;
 			}
@@ -63,6 +67,9 @@ namespace SDControl {
 					target[key] = parseFloat(input.value);
 					break;
 				case "string":
+					target[key] = input.value;
+					break;
+				case "nest":
 					target[key] = input.value || null;
 					break;
 			}
@@ -92,7 +99,7 @@ namespace SDControl {
 	}
 
 	export function addTask(taskData: GenParam): void {
-		queue.push(new GenTask(container, taskData, applyParameters, removeTask, SDConnector.removeGeneration));
+		queue.push(new GenTask(container, taskData));
 	}
 
 	async function executeAll() {
@@ -114,7 +121,7 @@ namespace SDControl {
 		}
 	}
 
-	function removeTask(taskData: GenParam): void {
+	export function removeTask(taskData: GenParam): void {
 		const index = queue.find(genTask => genTask.taskData == taskData);
 		queue.splice(index, 1);
 	}
@@ -221,7 +228,7 @@ namespace SDControl {
 	async function loadHistory() {
 		try {
 			for (const genData of await SDConnector.getHistory()) {
-				const imageWrapper = TaskUtil.createImageWrapper(container, genData, applyParameters, SDConnector.removeGeneration);
+				const imageWrapper = TaskUtil.createImageWrapper(container, genData);
 				container.insertBefore(imageWrapper, container.firstChild);
 			}
 		} catch (error) {
