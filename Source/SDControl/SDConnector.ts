@@ -3,21 +3,27 @@
 /// <reference path="ParamUtil.ts" />
 
 interface GenData {
-	imageURL: string;
+	imageName: string;
 	taskData: GenParam;
 	genTime: number;
 	ID: number;
 }
 
 namespace SDConnector {
+	export const project = new URLSearchParams(window.location.search).get("p") || "main";
+
 	async function getResponse(location: string, method = "GET", body = undefined) {
-		const response = await fetch(location, { method, body });
+		const headers = { project };
+		const request = { method, body, headers };
+		const response = await fetch(location, request);
 		const result = await response.json();
 		return result;
 	}
 
 	function sendRequest(location: string, method = "GET", body = undefined): void {
-		fetch(location, { method, body });
+		const headers = { project };
+		const request = { method, body, headers };
+		fetch(location, request);
 	}
 
 	export async function getParameters() {
@@ -65,5 +71,9 @@ namespace SDConnector {
 
 	export async function getSettings() {
 		return getResponse("/settings");
+	}
+
+	export function imageURL(name: string): string {
+		return `results/${project}/${name}`;
 	}
 }

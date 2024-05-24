@@ -6,18 +6,36 @@
 			"SDXL 1.0 Base": "sdxl_1_0_base_f16.ckpt"
 		},
 		"SD-15": {
+			"DreamShaper v8": "dreamshaper_v8_f16.ckpt",
+			"Realistic Vision v5.1": "realistic_vision_v5.1_f16.ckpt"
 		}
 	},
 	"LoRAs": {
 		"SDXL": {
+			"SDXL Lightning 8-Step": "sdxl_lightning_8_step_lora_f16.ckpt",
+			"Hyper SDXL 8-Step": "hyper_sdxl_8_step_lora_f16.ckpt"
 		},
 		"SD-15": {
+			"Hyper SD v1.x 8-Step": "hyper_sd_v1.x_8_step_lora_f16.ckpt"
 		}
 	},
-	"controls": {
-		"SDXL": {
-		},
-		"SD-15": {
+	"samplers": {
+		"sampler": {
+			"UniPC": "UniPC",
+			"DPM++ 2M Karras": "DPM++ 2M Karras",
+			"Euler Ancestral": "Euler a",
+			"DPM++ SDE Karras": "DPM++ SDE Karras",
+			"PLMS": "PLMS",
+			"DDIM": "DDIM",
+			"LCM": "LCM",
+			"Euler A Substep": "Euler A Substep",
+			"DPM++ SDE Substep": "DPM++ SDE Substep",
+			"TCD": "TCD",
+			"Euler A Trailing": "Euler A Trailing",
+			"DPM++ SDE Trailing": "DPM++ SDE Trailing",
+			"DPM++ 2M AYS": "DPM++ 2M AYS",
+			"Euler A AYS": "Euler A AYS",
+			"DPM++ SDE AYS": "DPM++ SDE AYS"
 		}
 	}
 }

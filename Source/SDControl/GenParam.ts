@@ -35,6 +35,7 @@ interface GenParam {
 	// prompt
 	positivePrompt?: string;
 	negativePrompt?: string;
+	batchCount?: number;
 }
 
 const defaultGenParam: GenParam = {
@@ -60,5 +61,6 @@ const defaultGenParam: GenParam = {
 	hiResFixStrength: 0.5,
 	// prompt
 	// positivePrompt: "",
-	// negativePrompt: ""
+	// negativePrompt: "",
+	batchCount: 1
 };

@@ -355,6 +355,7 @@ const defaultGenParam = {
     hiResFixWidth: 512,
     hiResFixHeight: 512,
     hiResFixStrength: 0.5,
+    batchCount: 1
 };
 class SimpleCatalogue {
     constructor(name, map) {
@@ -391,25 +392,12 @@ class IntCatalogue extends SimpleCatalogue {
 let modelCatalogue;
 let loraCatalogue;
 let controlCatalogue;
+let samplerCatalogue;
 const seedModeCatalogue = new IntCatalogue("seed mode", {
     legacy: "Legacy",
     torch: "Torch CPU Compatible",
     default: "Scale Alike",
     nvidia: "NVIDIA GPU Compatible"
-});
-const samplerCatalogue = new SimpleCatalogue("sampler", {
-    "DPM++-2M-Karras": "DPM++ 2M Karras",
-    "Euler-Ancestral": "Euler a",
-    "DDIM": "DDIM",
-    "PLMS": "PLMS",
-    "DPM++-SDE-Karras": "DPM++ SDE Karras",
-    "UniPC": "UniPC",
-    "LCM": "LCM",
-    "Euler-A-SubStep": "Euler A SubStep",
-    "DPM++-SDE-SubStep": "DPM++ SDE SubStep",
-    "TCD": "TCD",
-    "Euler-A-Trailing": "Euler A Trailing",
-    "DPM++-SDE-Trailing": "DPM++ SDE Trailing"
 });
 class SDCommandEngine extends BaseCommandEngine {
     constructor() {
@@ -770,6 +758,7 @@ var ParamUtil;
         result.negative_original_height = param.height;
         result.prompt = param.positivePrompt;
         result.negative_prompt = param.negativePrompt;
+        result.batch_count = param.batchCount;
         return result;
     }
     ParamUtil.toDTHGen = toDTHGen;
@@ -829,6 +818,7 @@ var ParamUtil;
         }
         result.positivePrompt = param.prompt;
         result.negativePrompt = param.negative_prompt;
+        result.batchCount = param.batch_count;
         return result;
     }
     ParamUtil.fromDTHGen = fromDTHGen;
@@ -864,13 +854,18 @@ var ParamUtil;
 })(ParamUtil || (ParamUtil = {}));
 var SDConnector;
 (function (SDConnector) {
+    SDConnector.project = new URLSearchParams(window.location.search).get("p") || "main";
     async function getResponse(location, method = "GET", body = undefined) {
-        const response = await fetch(location, { method, body });
+        const headers = { project: SDConnector.project };
+        const request = { method, body, headers };
+        const response = await fetch(location, request);
         const result = await response.json();
         return result;
     }
     function sendRequest(location, method = "GET", body = undefined) {
-        fetch(location, { method, body });
+        const headers = { project: SDConnector.project };
+        const request = { method, body, headers };
+        fetch(location, request);
     }
     async function getParameters() {
         const result = await getResponse("/parameters");
@@ -915,83 +910,163 @@ var SDConnector;
         return getResponse("/settings");
     }
     SDConnector.getSettings = getSettings;
+    function imageURL(name) {
+        return `results/${SDConnector.project}/${name}`;
+    }
+    SDConnector.imageURL = imageURL;
 })(SDConnector || (SDConnector = {}));
-var TaskUtil;
-(function (TaskUtil) {
-    function formatContent(taskData, start) {
-        const positiveLine = taskData.positivePrompt.split("\n")[0];
-        const negativeLine = taskData.negativePrompt.split("\n")[0];
-        if (positiveLine) {
-            if (negativeLine) {
-                return `${start}\n${taskData.seed}\n${positiveLine}\n- ${negativeLine}`;
-            }
-            return `${start}\n${taskData.seed}\n${positiveLine}`;
+var UIUtil;
+(function (UIUtil) {
+    function combineText(start, positive, negative, delimiter) {
+        if (positive) {
+            start += delimiter;
+            start += positive;
         }
-        if (negativeLine) {
-            return `${start}\n${taskData.seed}\n- ${negativeLine}`;
+        if (negative) {
+            start += delimiter;
+            start += "- ";
+            start += negative;
         }
-        return `${start}\n${taskData.seed}`;
+        return start;
     }
-    function formatAspect(taskData) {
-        return `${taskData.width} / ${taskData.height}`;
+    function waitingText(taskData) {
+        return combineText(`waiting\n${taskData.seed}`, taskData.positivePrompt.split("\n")[0], taskData.negativePrompt.split("\n")[0], "\n");
     }
-    function createDiv(parent, className, textContent, description) {
+    UIUtil.waitingText = waitingText;
+    function errorText(taskData) {
+        return combineText(`error\n${taskData.seed}`, taskData.positivePrompt.split("\n")[0], taskData.negativePrompt.split("\n")[0], "\n");
+    }
+    UIUtil.errorText = errorText;
+    function runningText(seconds, taskData) {
+        return combineText(`${seconds.toFixed(0)} seconds\n${taskData.seed}`, taskData.positivePrompt.split("\n")[0], taskData.negativePrompt.split("\n")[0], "\n");
+    }
+    UIUtil.runningText = runningText;
+    function imageText(seconds, taskData) {
+        return combineText(`${seconds.toFixed(1)} seconds | ${taskData.seed}`, taskData.positivePrompt.split("\n")[0], taskData.negativePrompt.split("\n")[0], " | ");
+    }
+    UIUtil.imageText = imageText;
+    function createHeaderIcon(parent, clickCallback, className, icon) {
         const result = document.createElement("div");
         result.classList.add(className);
-        result.textContent = textContent;
-        result.title = description;
+        result.textContent = icon;
+        result.addEventListener("click", clickCallback);
         parent.appendChild(result);
         return result;
     }
-    function createHeader(container, parent, taskData, moveCallback, removeCallback) {
+    function diceForSeed(seed) {
+        switch (seed % 6) {
+            case 1:
+                return "⚀";
+            case 2:
+                return "⚁";
+            case 3:
+                return "⚂";
+            case 4:
+                return "⚃";
+            case 5:
+                return "⚄";
+            default:
+                return "⚅";
+        }
+    }
+    function addCopyPromptIcon(parent, taskData, clickCallback) {
+        const icon = createHeaderIcon(parent, clickCallback, "iconPrompt", "✑");
+        icon.title = combineText(`Copy Prompt:`, taskData.positivePrompt, taskData.negativePrompt, "\n");
+    }
+    UIUtil.addCopyPromptIcon = addCopyPromptIcon;
+    function addCopySeedIcon(parent, taskData, clickCallback) {
+        const icon = createHeaderIcon(parent, clickCallback, "iconSeed", diceForSeed(taskData.seed));
+        icon.title = `Copy Seed:\n${taskData.seed}`;
+    }
+    UIUtil.addCopySeedIcon = addCopySeedIcon;
+    function addCopyParamIcon(parent, taskData, clickCallback) {
+        const icon = createHeaderIcon(parent, clickCallback, "iconParam", "⚙");
+        icon.title = `Copy Parameters:
+Model: ${taskData.model}
+Refiner Model: ${taskData.refinerModel}
+Refiner Start: ${taskData.refinerStart}
+First LoRA File: ${taskData.loras[0].file}
+First LoRA Weight: ${taskData.loras[0].weight}
+Second LoRA File: ${taskData.loras[1].file}
+Second LoRA Weight: ${taskData.loras[1].weight}
+Sampler: ${taskData.sampler}
+Steps: ${taskData.steps}
+CFG: ${taskData.CFG}
+Shift: ${taskData.shift}
+SSS: ${taskData.SSS}
+Width: ${taskData.width}
+Height: ${taskData.height}
+HiResFix: ${taskData.hiResFix}
+HiResFix Width: ${taskData.hiResFixWidth}
+HiResFix Height: ${taskData.hiResFixHeight}
+HiResFix Strength: ${taskData.hiResFixStrength}`;
+    }
+    UIUtil.addCopyParamIcon = addCopyParamIcon;
+    function addIconSpacer(parent) {
         const result = document.createElement("div");
-        result.classList.add("itemHeader");
-        const copyPrompt = createDiv(result, "iconPrompt", "✑", `copy prompts:\n${taskData.positivePrompt}\n- ${taskData.negativePrompt}`);
-        copyPrompt.addEventListener("click", event => {
+        result.classList.add("iconSpacer");
+        parent.appendChild(result);
+    }
+    UIUtil.addIconSpacer = addIconSpacer;
+    function addNextIcon(parent, clickCallback) {
+        const icon = createHeaderIcon(parent, clickCallback, "iconArrow", "◄");
+        icon.title = "Move Forward";
+    }
+    UIUtil.addNextIcon = addNextIcon;
+    function addPrevIcon(parent, clickCallback) {
+        const icon = createHeaderIcon(parent, clickCallback, "iconArrow", "►");
+        icon.title = "Move Backward";
+    }
+    UIUtil.addPrevIcon = addPrevIcon;
+    function addRemoveIcon(parent, clickCallback) {
+        const icon = createHeaderIcon(parent, clickCallback, "iconRemove", "✖");
+        icon.title = "Remove";
+    }
+    UIUtil.addRemoveIcon = addRemoveIcon;
+})(UIUtil || (UIUtil = {}));
+var TaskUtil;
+(function (TaskUtil) {
+    function addFlexStyle(element, taskData) {
+        let minWidth = Math.max(150, 150 * taskData.width / taskData.height);
+        let maxWidth = Math.min(500, 500 * taskData.width / taskData.height);
+        let initialWidth = Math.sqrt(100000 * taskData.width / taskData.height);
+        element.style.width = `${initialWidth}px`;
+        element.style.minWidth = `${minWidth}px`;
+        element.style.maxWidth = `${maxWidth}px`;
+        element.style.aspectRatio = `${taskData.width} / ${taskData.height}`;
+        element.style.flexGrow = `${initialWidth}`;
+        element.style.flexShrink = `${initialWidth}`;
+    }
+    function addHeader(container, parent, taskData, moveCallback, removeCallback) {
+        const header = document.createElement("div");
+        header.classList.add("itemHeader");
+        parent.appendChild(header);
+        UIUtil.addCopyPromptIcon(header, taskData, event => {
             SDControl.applyParameters({
                 positivePrompt: taskData.positivePrompt,
                 negativePrompt: taskData.negativePrompt
             });
             event.stopPropagation();
         });
-        const copySeed = createDiv(result, "iconSeed", "⚅", `copy seed:\n${taskData.seed}`);
-        switch (taskData.seed % 6) {
-            case 1:
-                copySeed.textContent = "⚀";
-                break;
-            case 2:
-                copySeed.textContent = "⚁";
-                break;
-            case 3:
-                copySeed.textContent = "⚂";
-                break;
-            case 4:
-                copySeed.textContent = "⚃";
-                break;
-            case 5:
-                copySeed.textContent = "⚄";
-                break;
-        }
-        copySeed.addEventListener("click", event => {
+        UIUtil.addCopySeedIcon(header, taskData, event => {
             SDControl.applyParameters({
                 seed: taskData.seed
             });
             event.stopPropagation();
         });
-        const copyParam = createDiv(result, "iconParam", "⚙", `copy parameters`);
-        copyParam.addEventListener("click", event => {
+        UIUtil.addCopyParamIcon(header, taskData, event => {
             SDControl.applyParameters({
                 ...taskData,
                 positivePrompt: undefined,
                 negativePrompt: undefined,
+                batchCount: undefined,
                 seed: undefined
             });
             event.stopPropagation();
         });
-        createDiv(result, "iconStretch", "", "");
+        UIUtil.addIconSpacer(header);
         if (moveCallback) {
-            const moveUp = createDiv(result, "iconArrow", "◄", "move forward");
-            moveUp.addEventListener("click", event => {
+            UIUtil.addNextIcon(header, event => {
                 const prev = parent.previousElementSibling;
                 if (prev) {
                     if (prev.classList.contains("imageWrapper")) {
@@ -1004,8 +1079,7 @@ var TaskUtil;
                 }
                 event.stopPropagation();
             });
-            const moveDown = createDiv(result, "iconArrow", "►", "move backward");
-            moveDown.addEventListener("click", event => {
+            UIUtil.addPrevIcon(header, event => {
                 const next = parent.nextElementSibling;
                 if (next) {
                     if (next.classList.contains("imageWrapper")) {
@@ -1019,46 +1093,51 @@ var TaskUtil;
                 event.stopPropagation();
             });
         }
-        createDiv(result, "iconSpace", "", "");
         if (removeCallback) {
-            const remove = createDiv(result, "iconRemove", "✖", "remove");
-            remove.addEventListener("click", event => {
+            UIUtil.addRemoveIcon(header, event => {
                 container.removeChild(parent);
                 removeCallback();
                 event.stopPropagation();
             });
         }
+    }
+    function createGenericWrapper(container, taskData, moveCallback, removeCallback) {
+        const result = document.createElement("div");
+        addFlexStyle(result, taskData);
+        addHeader(container, result, taskData, moveCallback, removeCallback);
         return result;
     }
+    function addClickHandler(target, taskData) {
+        target.addEventListener("click", event => {
+            SDControl.applyParameters({ ...taskData, batchCount: 1 });
+            event.stopPropagation();
+        });
+    }
     function createWaitingWrapper(container, taskData) {
-        const result = document.createElement("div");
+        const result = createGenericWrapper(container, taskData, null, () => SDControl.removeTask(taskData));
         result.classList.add("itemWrapper");
-        result.style.aspectRatio = formatAspect(taskData);
-        const header = createHeader(container, result, taskData, null, () => SDControl.removeTask(taskData));
-        result.appendChild(header);
-        const content = document.createElement("text");
+        const content = document.createElement("div");
         content.classList.add("itemContent");
-        content.textContent = formatContent(taskData, "waiting");
+        content.textContent = UIUtil.waitingText(taskData);
+        addClickHandler(content, taskData);
         result.appendChild(content);
         return result;
     }
     TaskUtil.createWaitingWrapper = createWaitingWrapper;
     function createRunninWrapper(taskData) {
-        const result = document.createElement("div");
+        const result = createGenericWrapper(null, taskData, null, null);
         result.classList.add("itemWrapper");
         result.classList.add("running");
-        result.style.aspectRatio = formatAspect(taskData);
-        const header = createHeader(null, result, taskData, null, null);
-        result.appendChild(header);
-        const content = document.createElement("text");
+        const content = document.createElement("div");
         content.classList.add("itemContent");
+        addClickHandler(content, taskData);
         result.appendChild(content);
         let seconds = 0;
-        content.textContent = formatContent(taskData, `${seconds.toFixed(0)} seconds`);
+        content.innerText = UIUtil.runningText(seconds, taskData);
         const intervalCallback = () => {
             if (content.isConnected) {
                 ++seconds;
-                content.textContent = formatContent(taskData, `${seconds.toFixed(0)} seconds`);
+                content.innerText = UIUtil.runningText(seconds, taskData);
             }
             else {
                 clearInterval(intervalID);
@@ -1069,28 +1148,28 @@ var TaskUtil;
     }
     TaskUtil.createRunninWrapper = createRunninWrapper;
     function createErrorWrapper(container, taskData) {
-        const result = document.createElement("div");
+        const result = createGenericWrapper(container, taskData, null, () => { });
         result.classList.add("itemWrapper");
         result.classList.add("error");
-        result.style.aspectRatio = formatAspect(taskData);
-        const header = createHeader(container, result, taskData, null, () => { });
-        result.appendChild(header);
-        const content = document.createElement("text");
+        const content = document.createElement("div");
         content.classList.add("itemContent");
-        content.textContent = formatContent(taskData, "error");
+        content.textContent = UIUtil.errorText(taskData);
+        addClickHandler(content, taskData);
         result.appendChild(content);
         return result;
     }
     TaskUtil.createErrorWrapper = createErrorWrapper;
     function createImageWrapper(container, genData) {
-        const result = document.createElement("div");
+        const result = createGenericWrapper(container, genData.taskData, (movement) => SDConnector.moveGen(genData.ID, movement), () => SDConnector.removeGen(genData.ID));
         result.classList.add("imageWrapper");
-        result.style.aspectRatio = formatAspect(genData.taskData);
-        const header = createHeader(container, result, genData.taskData, (movement) => SDConnector.moveGen(genData.ID, movement), () => SDConnector.removeGen(genData.ID));
-        result.appendChild(header);
         const image = document.createElement("img");
-        image.src = genData.imageURL;
+        image.src = SDConnector.imageURL(genData.imageName);
         result.appendChild(image);
+        const content = document.createElement("div");
+        content.classList.add("itemContent");
+        content.textContent = UIUtil.imageText(genData.genTime / 1000, genData.taskData);
+        addClickHandler(content, genData.taskData);
+        result.firstChild.appendChild(content);
         result.addEventListener("click", event => {
             if (result.classList.contains("FullScreen")) {
                 result.classList.remove("FullScreen");
@@ -1198,8 +1277,8 @@ var SDControl;
         }
         return taskData;
     }
-    const preprocessor = new STDPreprocessor();
-    const commandEngine = new SDCommandEngine();
+    let preprocessor;
+    let commandEngine;
     function addAll(randomize) {
         const taskData = createTaskData();
         commandEngine.init(taskData, taskData => addTask(taskData));
@@ -1247,12 +1326,22 @@ var SDControl;
     function initCollapsibleGroups() {
         const groups = document.querySelectorAll("[collapsible]");
         for (const group of groups) {
+            const storageKey = `${group.id}-collapsed`;
+            const storedState = localStorage.getItem(storageKey);
+            if (storedState == "true") {
+                group.classList.add("collapsed");
+            }
+            else if (storedState == "false") {
+                group.classList.remove("collapsed");
+            }
             group.firstElementChild.addEventListener("click", event => {
                 if (group.classList.contains("collapsed")) {
                     group.classList.remove("collapsed");
+                    localStorage.setItem(storageKey, "false");
                 }
                 else {
                     group.classList.add("collapsed");
+                    localStorage.setItem(storageKey, "true");
                 }
                 event.stopPropagation();
             });
@@ -1294,12 +1383,19 @@ var SDControl;
             target.appendChild(optgroup);
         }
     }
+    function loadProject(projectName) {
+        window.location.href = `?p=${projectName}`;
+    }
     function initControlInterface() {
         inputs = document.querySelectorAll("[SDTarget]");
         container = document.getElementById("images");
         const generateButton = document.getElementById("generate");
         const randomizeCheckBox = document.getElementById("randomize");
         generateButton.addEventListener("click", () => addAll(randomizeCheckBox.checked));
+        const projectNameInput = document.getElementById("projectName");
+        projectNameInput.value = SDConnector.project;
+        const loadProjectButton = document.getElementById("loadProject");
+        loadProjectButton.addEventListener("click", () => loadProject(projectNameInput.value));
     }
     async function loadSettings() {
         try {
@@ -1308,26 +1404,33 @@ var SDControl;
             addGroupsTo(settings.models, document.getElementById("refinerModel"));
             addGroupsTo(settings.LoRAs, document.getElementById("LoRA0Model"));
             addGroupsTo(settings.LoRAs, document.getElementById("LoRA1Model"));
+            addGroupsTo(settings.samplers, document.getElementById("sampler"));
             const positive = document.getElementById("positive");
             positive.rows = settings.promptLines;
             const negative = document.getElementById("negative");
             negative.rows = settings.negativeLines;
-            modelCatalogue = createCatalogues("models", settings.models);
-            loraCatalogue = createCatalogues("LoRAs", settings.LoRAs);
-            controlCatalogue = createCatalogues("controls", settings.controls);
+            modelCatalogue = createCatalogue("models", settings.models, CKPTCatalogue);
+            loraCatalogue = createCatalogue("LoRAs", settings.LoRAs, CKPTCatalogue);
+            controlCatalogue = createCatalogue("controls", settings.controls, CKPTCatalogue);
+            samplerCatalogue = createCatalogue("samplers", settings.samplers, SimpleCatalogue);
+            preprocessor = new STDPreprocessor();
+            commandEngine = new SDCommandEngine();
         }
         catch (error) {
             console.warn("Unable to load settings.");
             console.trace(error);
         }
     }
-    function createCatalogues(name, categories) {
+    function createCatalogue(name, categories, CatalogueType) {
         categories = Object.values(categories);
-        let models = { disabled: null };
+        const map = { disabled: null };
         for (const category of categories) {
-            models = { ...models, ...category };
+            for (const key in category) {
+                const dashed = key.replace(/[:\s]+/g, "-");
+                map[dashed] = category[key];
+            }
         }
-        return new CKPTCatalogue(name, models);
+        return new CatalogueType(name, map);
     }
     async function loadParameters() {
         try {
@@ -1350,10 +1453,13 @@ var SDControl;
             console.trace(error);
         }
     }
+    async function loadServer() {
+        await loadSettings();
+        await loadParameters();
+        await loadHistory();
+    }
     initCollapsibleGroups();
     initCombinedInputs();
     initControlInterface();
-    loadSettings();
-    loadParameters();
-    loadHistory();
+    loadServer();
 })(SDControl || (SDControl = {}));

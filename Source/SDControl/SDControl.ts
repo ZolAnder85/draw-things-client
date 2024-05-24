@@ -77,8 +77,8 @@ namespace SDControl {
 		return taskData;
 	}
 
-	const preprocessor = new STDPreprocessor()
-	const commandEngine = new SDCommandEngine()
+	let preprocessor: STDPreprocessor;
+	let commandEngine: SDCommandEngine;
 
 	function addAll(randomize: boolean): void {
 		const taskData = createTaskData();
@@ -129,11 +129,20 @@ namespace SDControl {
 	function initCollapsibleGroups() {
 		const groups = document.querySelectorAll("[collapsible]");
 		for (const group of groups) {
+			const storageKey = `${group.id}-collapsed`;
+			const storedState = localStorage.getItem(storageKey);
+			if (storedState == "true") {
+				group.classList.add("collapsed")
+			} else if (storedState == "false") {
+				group.classList.remove("collapsed")
+			}
 			group.firstElementChild.addEventListener("click", event => {
 				if (group.classList.contains("collapsed")) {
 					group.classList.remove("collapsed")
+					localStorage.setItem(storageKey, "false")
 				} else {
 					group.classList.add("collapsed")
+					localStorage.setItem(storageKey, "true")
 				}
 				event.stopPropagation();
 			});
@@ -179,12 +188,20 @@ namespace SDControl {
 		}
 	}
 
+	function loadProject(projectName: string): void {
+		window.location.href = `?p=${projectName}`;
+	}
+
 	function initControlInterface() {
 		inputs = document.querySelectorAll("[SDTarget]");
 		container = document.getElementById("images");
 		const generateButton = document.getElementById("generate") as HTMLButtonElement;
 		const randomizeCheckBox = document.getElementById("randomize") as HTMLInputElement;
 		generateButton.addEventListener("click", () => addAll(randomizeCheckBox.checked));
+		const projectNameInput = document.getElementById("projectName") as HTMLInputElement;
+		projectNameInput.value = SDConnector.project;
+		const loadProjectButton = document.getElementById("loadProject") as HTMLButtonElement;
+		loadProjectButton.addEventListener("click", () => loadProject(projectNameInput.value));
 	}
 
 	async function loadSettings() {
@@ -194,26 +211,34 @@ namespace SDControl {
 			addGroupsTo(settings.models, document.getElementById("refinerModel"));
 			addGroupsTo(settings.LoRAs, document.getElementById("LoRA0Model"));
 			addGroupsTo(settings.LoRAs, document.getElementById("LoRA1Model"));
+			addGroupsTo(settings.samplers, document.getElementById("sampler"));
 			const positive = document.getElementById("positive") as HTMLTextAreaElement;
 			positive.rows = settings.promptLines;
 			const negative = document.getElementById("negative") as HTMLTextAreaElement;
 			negative.rows = settings.negativeLines;
-			modelCatalogue = createCatalogues("models", settings.models);
-			loraCatalogue = createCatalogues("LoRAs", settings.LoRAs);
-			controlCatalogue = createCatalogues("controls", settings.controls);
+			modelCatalogue = createCatalogue("models", settings.models, CKPTCatalogue);
+			loraCatalogue = createCatalogue("LoRAs", settings.LoRAs, CKPTCatalogue);
+			controlCatalogue = createCatalogue("controls", settings.controls, CKPTCatalogue);
+			samplerCatalogue = createCatalogue("samplers", settings.samplers, SimpleCatalogue);
+			preprocessor = new STDPreprocessor();
+			commandEngine = new SDCommandEngine();
 		} catch (error) {
 			console.warn("Unable to load settings.");
 			console.trace(error);
 		}
 	}
 
-	function createCatalogues(name: string, categories: any): CKPTCatalogue {
+	function createCatalogue(name: string, categories: any, CatalogueType: any): any {
 		categories = Object.values(categories);
-		let models = { disabled: null };
+		const map = { disabled: null };
 		for (const category of categories) {
-			models = { ...models, ...category };
+			for (const key in category) {
+				// TODO: Could this be nicer?
+				const dashed = key.replace(/[:\s]+/g, "-");
+				map[dashed] = category[key];
+			}
 		}
-		return new CKPTCatalogue(name, models);
+		return new CatalogueType(name, map);
 	}
 
 	async function loadParameters() {
@@ -237,10 +262,14 @@ namespace SDControl {
 		}
 	}
 
+	async function loadServer() {
+		await loadSettings();
+		await loadParameters();
+		await loadHistory();
+	}
+
 	initCollapsibleGroups();
 	initCombinedInputs();
 	initControlInterface();
-	loadSettings();
-	loadParameters();
-	loadHistory();
+	loadServer();
 }

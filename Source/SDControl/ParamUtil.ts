@@ -64,6 +64,7 @@ namespace ParamUtil {
 
 		result.prompt = param.positivePrompt;
 		result.negative_prompt = param.negativePrompt;
+		result.batch_count = param.batchCount;
 
 		return result;
 	}
@@ -134,6 +135,7 @@ namespace ParamUtil {
 
 		result.positivePrompt = param.prompt;
 		result.negativePrompt = param.negative_prompt;
+		// result.batchCount = param.batch_count;
 
 		return result;
 	}

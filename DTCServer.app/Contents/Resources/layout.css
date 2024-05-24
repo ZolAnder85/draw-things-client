@@ -1,5 +1,5 @@
 :root {
-	--options-width: calc(min(max(50px + 25%, 350px), 450px));
+	--options-width: calc(min(max(50px + 25%, 320px), 380px));
 	--margin-size: 8px;
 	--label-width: 110px;
 	--input-width: 55px;

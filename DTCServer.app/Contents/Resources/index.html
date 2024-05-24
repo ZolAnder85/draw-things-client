@@ -21,21 +21,29 @@
 				<textarea id="positive" placeholder="positive prompt" SDTarget="positivePrompt" SDType="string"></textarea>
 			</div>
 		</div>
-		<div collapsible class="collapsed group">
+		<div id="generation-group" collapsible class="collapsed group">
 			<h2>Generation</h2>
 			<div class="row">
 				<textarea id="negative" placeholder="negative prompt" SDTarget="negativePrompt" SDType="string"></textarea>
 			</div>
 			<div class="row">
-				<label for="seed">seed</label>
-				<input id="seed" type="number" min="1" step="1" value="35880" SDTarget="seed" SDType="int" />
+				<label for="currentSeed">current seed</label>
+				<input id="currentSeed" type="number" min="1" step="1" value="35880" SDTarget="seed" SDType="int" />
+			</div>
+			<div class="row" combined>
+				<label for="batchCount">batch count</label>
+				<input id="batchCount" type="range" min="1" max="20" step="1" value="1" />
+				<input type="number" SDTarget="batchCount" SDType="int" />
 			</div>
 			<div class="row">
 				<label for="randomize">randomize</label>
+				<!--
+					<button id="nextSeed" >next seed</button>
+				-->
 				<input id="randomize" type="checkbox" />
 			</div>
 		</div>
-		<div collapsible class="collapsed group">
+		<div id="model-group" collapsible class="collapsed group">
 			<h2>Model</h2>
 			<div class="row">
 				<label for="model">base model</label>
@@ -76,21 +84,11 @@
 				<input type="number" SDTarget="loras/1/weight" SDType="float" />
 			</div>
 		</div>
-		<div collapsible class="collapsed group">
+		<div id="sampling-group" collapsible class="collapsed group">
 			<h2>Sampling</h2>
 			<div class="row">
 				<label for="sampler">sampler</label>
 				<select id="sampler" SDTarget="sampler" SDType="string">
-					<option value="DDIM">DDIM</option>
-					<option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
-					<option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
-					<option value="Euler a">Euler Ancestral</option>
-					<option value="DPM++ SDE Substep">DPM++ SDE Substep</option>
-					<option value="Euler A Substep">Euler A Substep</option>
-					<option value="LCM">LCM</option>
-					<option value="TCD">TCD</option>
-					<option value="DPM++ SDE Trailing">DPM++ SDE Trailing</option>
-					<option value="Euler A Trailing">Euler A Trailing</option>
 				</select>
 			</div>
 			<div class="row" combined>
@@ -114,7 +112,7 @@
 				<input type="number" SDTarget="SSS" SDType="float" />
 			</div>
 		</div>
-		<div collapsible class="collapsed group">
+		<div id="resolution-group" collapsible class="collapsed group">
 			<h2>Resolution</h2>
 			<div class="row" combined>
 				<label for="width">width</label>
@@ -145,6 +143,27 @@
 				<input id="HRFStrength" type="range" min="0" max="1" step="0.05" value="0.5" />
 				<input type="number" SDTarget="hiResFixStrength" SDType="float" />
 			</div>
+		</div>
+		<div id="project-group" collapsible class="collapsed group">
+			<h2>Project</h2>
+			<div class="row">
+				<label for="projectName">project name</label>
+				<input id="projectName" />
+			</div>
+			<div class="row">
+				<button id="loadProject">load or create</button>
+			</div>
+			<!--
+				<div class="row">
+					<button id="deleteProject">delete project</button>
+				</div>
+				<div class="row">
+					<button id="renameProject">rename current</button>
+				</div>
+				<div class="row">
+					<button id="copyProject">copy current</button>
+				</div>
+			-->
 		</div>
 	</div>
 	<div class="content" id="images">

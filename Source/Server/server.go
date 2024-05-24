@@ -36,7 +36,7 @@ func responseDataFromBytes(bytes []byte) (result ResponseData) {
 }
 
 type GenData struct {
-	ImageURL string `json:"imageURL"`
+	ImageName string `json:"imageName"`
 	TaskData TaskData `json:"taskData"`
 	GenTime int `json:"genTime"`
 	ID int `json:"ID"`
@@ -69,43 +69,44 @@ func saveGenList(genList []GenData, path string) {
 
 // paths for saving
 
-func historyPath() string {
-	return fmt.Sprintf("%v/history.json", resultsPath)
+func defaultsPath() string {
+	return webAppPath + "/defaults.json"
 }
 
 func settingsPath() string {
-	return fmt.Sprintf("%v/settings.json", resultsPath)
+	return resultsPath + "/settings.json"
 }
 
-func defaultsPath() string {
-	return fmt.Sprintf("%v/defaults.json", webAppPath)
+func historyPath(project string) string {
+	return resultsPath + "/" + project + "/history.json"
 }
 
-func imagePath(ID int) string {
-	return fmt.Sprintf("%v/%05d.png", resultsPath, ID)
+func imagePath(project string, ID int) string {
+	return fmt.Sprintf("%v/%v/%05d.png", resultsPath, project, ID)
 }
 
-func imageURL(ID int) string {
-	return fmt.Sprintf("results/%05d.png?%05d", ID, rand.Intn(100000))
+func imageName(ID int) string {
+	return fmt.Sprintf("%05d.png?%05d", ID, rand.Intn(100000))
 }
 
 // response converters
 
-type ResponseConverter func(requestBody []byte, responseBody []byte, genTime int) []byte
+type ResponseConverter func(project string, requestBody []byte, responseBody []byte, genTime int) []byte
 
-func dummyResponseConverter(requestBody []byte, responseBody []byte, genTime int) []byte {
+func dummyResponseConverter(project string, requestBody []byte, responseBody []byte, genTime int) []byte {
 	return responseBody;
 }
 
-func saveResult(encodedTask []byte, encodedImage string, genTime int, ID int) GenData {
-	saveImage(encodedImage, imagePath(ID))
-	imageURL := imageURL(ID)
+func saveResult(encodedTask []byte, encodedImage string, genTime int, project string, ID int) GenData {
+	saveImage(encodedImage, imagePath(project, ID))
+	imageName := imageName(ID)
 	taskData := taskDataFromBytes(encodedTask)
-	return GenData { imageURL, taskData, genTime, ID }
+	return GenData { imageName, taskData, genTime, ID }
 }
 
-func generationConverter(requestBody []byte, responseBody []byte, genTime int) []byte {
-	historyData := genListFromFile(historyPath())
+func generationConverter(project string, requestBody []byte, responseBody []byte, genTime int) []byte {
+	exec.Command("mkdir", "-p", resultsPath + "/" + project).Run()
+	historyData := genListFromFile(historyPath(project))
 	ID := 0
 	for _, genData := range historyData {
 		if ID < genData.ID {
@@ -117,25 +118,25 @@ func generationConverter(requestBody []byte, responseBody []byte, genTime int) [
 	for _, encodedImage := range responseData.Images {
 		ID++
 		genTime := genTime / len(responseData.Images)
-		genData := saveResult(requestBody, encodedImage, genTime, ID)
+		genData := saveResult(requestBody, encodedImage, genTime, project, ID)
 		historyData = append(historyData, genData)
 		resultData = append(resultData, genData)
 	}
-	saveGenList(historyData, historyPath());
+	saveGenList(historyData, historyPath(project));
 	return bytesFromGenList(resultData);
 }
 
 // reqest converters
 
-type RequestConverter func(requestBody []byte) []byte
+type RequestConverter func(project string, requestBody []byte) []byte
 
-func dummyRequestConverter(requestBody []byte) []byte {
+func dummyRequestConverter(project string, requestBody []byte) []byte {
 	return requestBody
 }
 
-func getHistoryConverter(requestBody []byte) []byte {
+func getHistoryConverter(project string, requestBody []byte) []byte {
 	var result []byte
-	result, _ = os.ReadFile(historyPath())
+	result, _ = os.ReadFile(historyPath(project))
 	if result == nil {
 		return []byte("[]")
 	}
@@ -153,9 +154,9 @@ func searchID(historyData []GenData, ID int, skipStart int, skipEnd int) int {
 	return -1;
 }
 
-func moveGenPrevConverter(requestBody []byte) []byte {
+func moveGenPrevConverter(project string, requestBody []byte) []byte {
 	ID, _ := strconv.Atoi(string(requestBody))
-	historyData := genListFromFile(historyPath())
+	historyData := genListFromFile(historyPath(project))
 	index := searchID(historyData, ID, 1, 0)
 	if index < 0 {
 		return []byte{}
@@ -163,13 +164,13 @@ func moveGenPrevConverter(requestBody []byte) []byte {
 	genData := historyData[index]
 	historyData[index] = historyData[index - 1]
 	historyData[index - 1] = genData
-	saveGenList(historyData, historyPath())
+	saveGenList(historyData, historyPath(project))
 	return []byte{}
 }
 
-func moveGenNextConverter(requestBody []byte) []byte {
+func moveGenNextConverter(project string, requestBody []byte) []byte {
 	ID, _ := strconv.Atoi(string(requestBody))
-	historyData := genListFromFile(historyPath())
+	historyData := genListFromFile(historyPath(project))
 	index := searchID(historyData, ID, 0, 1)
 	if index < 0 {
 		return []byte{}
@@ -177,14 +178,14 @@ func moveGenNextConverter(requestBody []byte) []byte {
 	genData := historyData[index]
 	historyData[index] = historyData[index + 1]
 	historyData[index + 1] = genData
-	saveGenList(historyData, historyPath())
+	saveGenList(historyData, historyPath(project))
 	return []byte{}
 }
 
-func removeGenConverter(requestBody []byte) []byte {
+func removeGenConverter(project string, requestBody []byte) []byte {
 	ID, _ := strconv.Atoi(string(requestBody))
-	os.Remove(imagePath(ID))
-	historyData := genListFromFile(historyPath())
+	os.Remove(imagePath(project, ID))
+	historyData := genListFromFile(historyPath(project))
 	index := searchID(historyData, ID, 1, 0)
 	if index < 0 {
 		return []byte{}
@@ -193,20 +194,20 @@ func removeGenConverter(requestBody []byte) []byte {
 	index++
 	after := historyData[index:]
 	historyData = append(before, after...)
-	saveGenList(historyData, historyPath())
+	saveGenList(historyData, historyPath(project))
 	return []byte{}
 }
 
-func clearHistoryConverter(requestBody []byte) []byte {
-	historyData := genListFromFile(historyPath())
+func clearHistoryConverter(project string, requestBody []byte) []byte {
+	historyData := genListFromFile(historyPath(project))
 	for _, genData := range historyData {
-		os.Remove(imagePath(genData.ID))
+		os.Remove(imagePath(project, genData.ID))
 	}
-	os.Remove(historyPath())
+	os.Remove(historyPath(project))
 	return []byte{}
 }
 
-func settingsRequestConverter(requestBody []byte) []byte {
+func settingsRequestConverter(project string, requestBody []byte) []byte {
 	var result []byte
 	result, _ = os.ReadFile(settingsPath())
 	if result == nil {
@@ -232,7 +233,8 @@ func createTargetHandler(requestConverter RequestConverter, responseConverter Re
 		if checkError(err, serverResponse, http.StatusInternalServerError, "Error reading request body.") {
 			return
 		}
-		convertedRequestBody := requestConverter(requestBody)
+		project := serverRequest.Header.Get("project")
+		convertedRequestBody := requestConverter(project, requestBody)
 		targetRequest, err := http.NewRequest(serverRequest.Method, targetURL, bytes.NewBuffer(convertedRequestBody))
 		if checkError(err, serverResponse, http.StatusInternalServerError, "Error creating target request.") {
 			return
@@ -248,7 +250,7 @@ func createTargetHandler(requestConverter RequestConverter, responseConverter Re
 		}
 		delta := time.Since(start)
 		genTime := delta.Milliseconds()
-		convertedResponseBody := responseConverter(requestBody, responseBody, int(genTime))
+		convertedResponseBody := responseConverter(project, requestBody, responseBody, int(genTime))
 		serverResponse.Write(convertedResponseBody)
 	}
 }
@@ -259,7 +261,8 @@ func createSimpleHandler(requestConverter RequestConverter) http.HandlerFunc {
 		if checkError(err, serverResponse, http.StatusInternalServerError, "Error reading request body.") {
 			return
 		}
-		convertedRequestBody := requestConverter(requestBody)
+		project := serverRequest.Header.Get("project")
+		convertedRequestBody := requestConverter(project, requestBody)
 		serverResponse.Write(convertedRequestBody)
 	}
 }

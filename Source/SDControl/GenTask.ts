@@ -1,43 +1,28 @@
 /// <reference path="Movement.ts" />
 /// <reference path="GenParam.ts" />
+/// <reference path="UIUtil.ts" />
 /// <reference path="SDConnector.ts" />
 /// <reference path="SDControl.ts" />
 
 namespace TaskUtil {
-	function formatContent(taskData: GenParam, start: string): string {
-		const positiveLine = taskData.positivePrompt.split("\n")[0];
-		const negativeLine = taskData.negativePrompt.split("\n")[0];
-		if (positiveLine) {
-			if (negativeLine) {
-				return `${start}\n${taskData.seed}\n${positiveLine}\n- ${negativeLine}`;
-			}
-			return `${start}\n${taskData.seed}\n${positiveLine}`;
-		}
-		if (negativeLine) {
-			return `${start}\n${taskData.seed}\n- ${negativeLine}`;
-		}
-		return `${start}\n${taskData.seed}`;
+	function addFlexStyle(element: HTMLElement, taskData: GenParam): void {
+		let minWidth = Math.max(150, 150 * taskData.width / taskData.height);
+		let maxWidth = Math.min(500, 500 * taskData.width / taskData.height);
+		let initialWidth = Math.sqrt(100000 * taskData.width / taskData.height);
+		element.style.width = `${initialWidth}px`;
+		element.style.minWidth = `${minWidth}px`;
+		element.style.maxWidth = `${maxWidth}px`;
+		element.style.aspectRatio = `${taskData.width} / ${taskData.height}`;
+		element.style.flexGrow = `${initialWidth}`;
+		element.style.flexShrink = `${initialWidth}`;
 	}
 
-	function formatAspect(taskData: GenParam): string {
-		return `${taskData.width} / ${taskData.height}`;
-	}
+	function addHeader(container: HTMLElement, parent: HTMLElement, taskData: GenParam, moveCallback: any, removeCallback: any): void {
+		const header = document.createElement("div");
+		header.classList.add("itemHeader");
+		parent.appendChild(header);
 
-	function createDiv(parent: HTMLElement, className: string, textContent: string, description: string): HTMLElement {
-		const result = document.createElement("div");
-		result.classList.add(className);
-		result.textContent = textContent;
-		result.title = description;
-		parent.appendChild(result);
-		return result;
-	}
-
-	function createHeader(container: HTMLElement, parent: HTMLElement, taskData: GenParam, moveCallback: any, removeCallback: any): HTMLElement {
-		const result = document.createElement("div");
-		result.classList.add("itemHeader");
-
-		const copyPrompt = createDiv(result, "iconPrompt", "✑", `copy prompts:\n${taskData.positivePrompt}\n- ${taskData.negativePrompt}`);
-		copyPrompt.addEventListener("click", event => {
+		UIUtil.addCopyPromptIcon(header, taskData, event => {
 			SDControl.applyParameters({
 				positivePrompt: taskData.positivePrompt,
 				negativePrompt: taskData.negativePrompt
@@ -45,34 +30,14 @@ namespace TaskUtil {
 			event.stopPropagation();
 		});
 
-		const copySeed = createDiv(result, "iconSeed", "⚅", `copy seed:\n${taskData.seed}`);
-		switch (taskData.seed % 6) {
-			case 1:
-				copySeed.textContent = "⚀";
-				break;
-			case 2:
-				copySeed.textContent = "⚁";
-				break;
-			case 3:
-				copySeed.textContent = "⚂";
-				break;
-			case 4:
-				copySeed.textContent = "⚃";
-				break;
-			case 5:
-				copySeed.textContent = "⚄";
-				break;
-		}
-		copySeed.addEventListener("click", event => {
+		UIUtil.addCopySeedIcon(header, taskData, event => {
 			SDControl.applyParameters({
 				seed: taskData.seed
 			});
 			event.stopPropagation();
 		});
 
-		// TODO: Construct param preview string.
-		const copyParam = createDiv(result, "iconParam", "⚙", `copy parameters`);
-		copyParam.addEventListener("click", event => {
+		UIUtil.addCopyParamIcon(header, taskData, event => {
 			SDControl.applyParameters({
 				...taskData,
 				positivePrompt: undefined,
@@ -82,11 +47,10 @@ namespace TaskUtil {
 			event.stopPropagation();
 		});
 
-		createDiv(result, "iconStretch", "", "");
+		UIUtil.addIconSpacer(header);
 
 		if (moveCallback) {
-			const moveUp = createDiv(result, "iconArrow", "◄", "move forward");
-			moveUp.addEventListener("click", event => {
+			UIUtil.addNextIcon(header, event => {
 				const prev = parent.previousElementSibling;
 				if (prev) {
 					if (prev.classList.contains("imageWrapper")) {
@@ -99,24 +63,7 @@ namespace TaskUtil {
 				event.stopPropagation();
 			});
 
-			/*
-			const moveTop = createDiv(result, "iconArrow", "▲", "move to top");
-			moveTop.addEventListener("click", event => {
-				container.insertBefore(parent, container.firstElementChild);
-				moveCallback(Movement.LAST);
-				event.stopPropagation();
-			});
-
-			const moveBottom = createDiv(result, "iconArrow", "▼", "move to bottom");
-			moveBottom.addEventListener("click", event => {
-				container.appendChild(parent);
-				moveCallback(Movement.FIRST);
-				event.stopPropagation();
-			});
-			*/
-
-			const moveDown = createDiv(result, "iconArrow", "►", "move backward");
-			moveDown.addEventListener("click", event => {
+			UIUtil.addPrevIcon(header, event => {
 				const next = parent.nextElementSibling;
 				if (next) {
 					if (next.classList.contains("imageWrapper")) {
@@ -130,62 +77,59 @@ namespace TaskUtil {
 			});
 		}
 
-		createDiv(result, "iconSpace", "", "");
-
 		if (removeCallback) {
-			const remove = createDiv(result, "iconRemove", "✖", "remove");
-			remove.addEventListener("click", event => {
+			UIUtil.addRemoveIcon(header, event => {
 				container.removeChild(parent);
 				removeCallback();
 				event.stopPropagation();
 			});
 		}
+	}
 
+	function createGenericWrapper(container: HTMLElement, taskData: GenParam, moveCallback: any, removeCallback: any): HTMLElement {
+		const result = document.createElement("div");
+		addFlexStyle(result, taskData);
+		addHeader(container, result, taskData, moveCallback, removeCallback);
 		return result;
 	}
 
+	// TODO: It might be worth creating this callback only once.
+	function addClickHandler(target: HTMLElement, taskData: GenParam): void {
+		target.addEventListener("click", event => {
+			SDControl.applyParameters(taskData);
+			event.stopPropagation();
+		});
+	}
+
 	export function createWaitingWrapper(container: HTMLElement, taskData: GenParam): HTMLElement {
-		const result = document.createElement("div");
+		const result = createGenericWrapper(container, taskData, null, () => SDControl.removeTask(taskData));
 		result.classList.add("itemWrapper");
-		result.style.aspectRatio = formatAspect(taskData);
 
-		// TODO: Could this be better?
-		const header = createHeader(container, result, taskData, null, () => SDControl.removeTask(taskData));
-		result.appendChild(header);
-
-		const content = document.createElement("text");
+		const content = document.createElement("div");
 		content.classList.add("itemContent");
-		content.textContent = formatContent(taskData, "waiting");
+		content.textContent = UIUtil.waitingText(taskData);
+		addClickHandler(content, taskData);
 		result.appendChild(content);
-
-		// content.addEventListener("click", event => {
-		// 	SDControl.applyParameters(taskData);
-		// 	event.stopPropagation();
-		// });
 
 		return result;
 	}
 
 	export function createRunninWrapper(taskData: GenParam): HTMLElement {
-		const result = document.createElement("div");
+		const result = createGenericWrapper(null, taskData, null, null);
 		result.classList.add("itemWrapper");
 		result.classList.add("running");
-		result.style.aspectRatio = formatAspect(taskData);
 
-		const header = createHeader(null, result, taskData, null, null);
-		result.appendChild(header);
-
-		const content = document.createElement("text");
+		const content = document.createElement("div");
 		content.classList.add("itemContent");
+		addClickHandler(content, taskData);
 		result.appendChild(content);
 
-		// TODO: Could this be better?
 		let seconds = 0;
-		content.textContent = formatContent(taskData, `${seconds.toFixed(0)} seconds`);
+		content.innerText = UIUtil.runningText(seconds, taskData);
 		const intervalCallback = () => {
 			if (content.isConnected) {
 				++seconds;
-				content.textContent = formatContent(taskData, `${seconds.toFixed(0)} seconds`);
+				content.innerText = UIUtil.runningText(seconds, taskData);
 			} else {
 				clearInterval(intervalID);
 			}
@@ -193,54 +137,36 @@ namespace TaskUtil {
 
 		const intervalID = setInterval(intervalCallback, 1000);
 
-		// content.addEventListener("click", event => {
-		// 	SDControl.applyParameters(taskData);
-		// 	event.stopPropagation();
-		// });
-
 		return result;
 	}
 
 	export function createErrorWrapper(container: HTMLElement, taskData: GenParam): HTMLElement {
-		const result = document.createElement("div");
+		const result = createGenericWrapper(container, taskData, null, () => {});
 		result.classList.add("itemWrapper");
 		result.classList.add("error");
-		result.style.aspectRatio = formatAspect(taskData);
 
-		// TODO: Could this be better?
-		const header = createHeader(container, result, taskData, null, () => {});
-		result.appendChild(header);
-
-		const content = document.createElement("text");
+		const content = document.createElement("div");
 		content.classList.add("itemContent");
-		content.textContent = formatContent(taskData, "error");
+		content.textContent = UIUtil.errorText(taskData);
+		addClickHandler(content, taskData);
 		result.appendChild(content);
 
 		return result;
 	}
 
 	export function createImageWrapper(container: HTMLElement, genData: GenData): HTMLElement {
-		const result = document.createElement("div");
+		const result = createGenericWrapper(container, genData.taskData, (movement: Movement) => SDConnector.moveGen(genData.ID, movement), () => SDConnector.removeGen(genData.ID));
 		result.classList.add("imageWrapper");
-		result.style.aspectRatio = formatAspect(genData.taskData);
-
-		// TODO: Could this be better?
-		const header = createHeader(container, result, genData.taskData, (movement: Movement) => SDConnector.moveGen(genData.ID, movement), () => SDConnector.removeGen(genData.ID));
-		result.appendChild(header);
 
 		const image = document.createElement("img");
-		image.src = genData.imageURL;
+		image.src = SDConnector.imageURL(genData.imageName);
 		result.appendChild(image);
 
-		// const info = document.createElement("div");
-		// info.classList.add("imageInfo");
-		// info.textContent = formatResult(genData.taskData, genData.genTime / 1000);
-		// result.appendChild(info);
-
-		// info.addEventListener("click", event => {
-		// 	SDControl.applyParameters(genData.taskData)
-		// 	event.stopPropagation();
-		// });
+		const content = document.createElement("div");
+		content.classList.add("itemContent");
+		content.textContent = UIUtil.imageText(genData.genTime / 1000, genData.taskData);
+		addClickHandler(content, genData.taskData);
+		result.firstChild.appendChild(content);
 
 		result.addEventListener("click", event => {
 			if (result.classList.contains("FullScreen")) {
