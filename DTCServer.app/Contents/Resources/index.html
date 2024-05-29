@@ -27,20 +27,15 @@
 				<textarea id="negative" placeholder="negative prompt" SDTarget="negativePrompt" SDType="string"></textarea>
 			</div>
 			<div class="row">
-				<label for="currentSeed">current seed</label>
+				<label for="currentSeed">seed</label>
 				<input id="currentSeed" type="number" min="1" step="1" value="35880" SDTarget="seed" SDType="int" />
+				<button id="nextSeed">next</button>
+				<input id="randomize" type="checkbox" />
 			</div>
 			<div class="row" combined>
-				<label for="batchCount">batch count</label>
+				<label for="batchCount">count</label>
 				<input id="batchCount" type="range" min="1" max="20" step="1" value="1" />
 				<input type="number" SDTarget="batchCount" SDType="int" />
-			</div>
-			<div class="row">
-				<label for="randomize">randomize</label>
-				<!--
-					<button id="nextSeed" >next seed</button>
-				-->
-				<input id="randomize" type="checkbox" />
 			</div>
 		</div>
 		<div id="model-group" collapsible class="collapsed group">
@@ -61,28 +56,44 @@
 				<input id="refinerStart" type="range" min="0" max="1" step="0.05" value="0.5" />
 				<input type="number" SDTarget="refinerStart" SDType="float" />
 			</div>
+		</div>
+		<div id="LoRAs-group" collapsible class="collapsed group">
+			<h2>LoRAs</h2>
 			<div class="row">
-				<label for="LoRA0Model">lora 1 model</label>
+				<label for="LoRA0Model">LoRA 1 model</label>
 				<select id="LoRA0Model" SDTarget="loras/0/file" SDType="nest">
 					<option value="">disabled</option>
 				</select>
 			</div>
 			<div class="row" combined>
-				<label for="LoRA0Weight">lora 1 weight</label>
+				<label for="LoRA0Weight">LoRA 1 weight</label>
 				<input id="LoRA0Weight" type="range" min="-2" max="2" step="0.05" value="0" />
 				<input type="number" SDTarget="loras/0/weight" SDType="float" />
 			</div>
 			<div class="row">
-				<label for="LoRA1Model">lora 2 model</label>
+				<label for="LoRA1Model">LoRA 2 model</label>
 				<select id="LoRA1Model" SDTarget="loras/1/file" SDType="nest">
 					<option value="">disabled</option>
 				</select>
 			</div>
 			<div class="row" combined>
-				<label for="LoRA1Weight">lora 2 weight</label>
+				<label for="LoRA1Weight">LoRA 2 weight</label>
 				<input id="LoRA1Weight" type="range" min="-2" max="2" step="0.05" value="0" />
 				<input type="number" SDTarget="loras/1/weight" SDType="float" />
 			</div>
+
+			<div class="row">
+				<label for="LoRA2Model">LoRA 3 model</label>
+				<select id="LoRA2Model" SDTarget="loras/2/file" SDType="nest">
+					<option value="">disabled</option>
+				</select>
+			</div>
+			<div class="row" combined>
+				<label for="LoRA2Weight">LoRA 3 weight</label>
+				<input id="LoRA2Weight" type="range" min="-2" max="2" step="0.05" value="0" />
+				<input type="number" SDTarget="loras/2/weight" SDType="float" />
+			</div>
+
 		</div>
 		<div id="sampling-group" collapsible class="collapsed group">
 			<h2>Sampling</h2>

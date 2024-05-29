@@ -4,7 +4,6 @@
 /// <reference path="GenTask.ts" />
 /// <reference path="Catalogue.ts" />
 
-// TODO: Function reordering?
 namespace SDControl {
 	let inputs;
 	let container;
@@ -43,6 +42,11 @@ namespace SDControl {
 					break;
 			}
 		}
+	}
+
+	function applyNextSeed(): void {
+		const seedInput: any = document.getElementById("currentSeed");
+		seedInput.value = XSRandom.next(parseInt(seedInput.value));
 	}
 
 	function createTaskData(): GenParam {
@@ -100,11 +104,13 @@ namespace SDControl {
 
 	export function addTask(taskData: GenParam): void {
 		queue.push(new GenTask(container, taskData));
+		console.log(queue.map(data => data.taskData));
 	}
 
 	async function executeAll() {
 		waiting = false;
 		while (queue.length) {
+			console.log(queue.map(data => data.taskData));
 			await executeTask(queue.shift());
 		}
 		waiting = true;
@@ -122,8 +128,12 @@ namespace SDControl {
 	}
 
 	export function removeTask(taskData: GenParam): void {
+		console.log("removeing task:");
+		console.log(queue.map(data => data.taskData));
 		const index = queue.find(genTask => genTask.taskData == taskData);
 		queue.splice(index, 1);
+		console.log(queue.map(data => data.taskData));
+		console.log("removeing ended");
 	}
 
 	function initCollapsibleGroups() {
@@ -152,8 +162,8 @@ namespace SDControl {
 	function initCombinedInputs() {
 		const rows = document.querySelectorAll("[combined]");
 		for (const row of rows) {
-			const slider = row.children[1] as HTMLInputElement;
-			const numeric = row.children[2] as HTMLInputElement;
+			const slider: any = row.children[1];
+			const numeric: any = row.children[2];
 			slider.setAttribute("SDTarget", numeric.getAttribute("SDTarget"));
 			slider.setAttribute("SDType", numeric.getAttribute("SDType"));
 			numeric.min = slider.min;
@@ -169,39 +179,28 @@ namespace SDControl {
 		}
 	}
 
-	function addOptionsTo(options: any, target: HTMLElement): void {
-		for (const key in options) {
-			const option = document.createElement("option");
-			option.textContent = key;
-			option.value = options[key];
-			target.appendChild(option);
-		}
-	}
-
-	function addGroupsTo(groups: any, target: HTMLElement): void {
-		for (const key in groups) {
-			const optgroup = document.createElement("optgroup");
-			optgroup.label = key;
-			const options = groups[key];
-			addOptionsTo(options, optgroup);
-			target.appendChild(optgroup);
-		}
+	function initControlInterface() {
+		inputs = document.querySelectorAll("[SDTarget]");
+		container = document.getElementById("images");
+		const nextSeedButton = document.getElementById("nextSeed");
+		nextSeedButton.addEventListener("click", () => applyNextSeed());
+		const randomizeCheckBox: any = document.getElementById("randomize");
+		const generateButton = document.getElementById("generate");
+		generateButton.addEventListener("click", () => addAll(randomizeCheckBox.checked));
+		const projectNameInput: any = document.getElementById("projectName");
+		projectNameInput.value = SDConnector.project;
+		const loadProjectButton = document.getElementById("loadProject");
+		loadProjectButton.addEventListener("click", () => loadProject(projectNameInput.value));
 	}
 
 	function loadProject(projectName: string): void {
 		window.location.href = `?p=${projectName}`;
 	}
 
-	function initControlInterface() {
-		inputs = document.querySelectorAll("[SDTarget]");
-		container = document.getElementById("images");
-		const generateButton = document.getElementById("generate") as HTMLButtonElement;
-		const randomizeCheckBox = document.getElementById("randomize") as HTMLInputElement;
-		generateButton.addEventListener("click", () => addAll(randomizeCheckBox.checked));
-		const projectNameInput = document.getElementById("projectName") as HTMLInputElement;
-		projectNameInput.value = SDConnector.project;
-		const loadProjectButton = document.getElementById("loadProject") as HTMLButtonElement;
-		loadProjectButton.addEventListener("click", () => loadProject(projectNameInput.value));
+	async function loadServer() {
+		await loadSettings();
+		await loadParameters();
+		await loadHistory();
 	}
 
 	async function loadSettings() {
@@ -211,6 +210,7 @@ namespace SDControl {
 			addGroupsTo(settings.models, document.getElementById("refinerModel"));
 			addGroupsTo(settings.LoRAs, document.getElementById("LoRA0Model"));
 			addGroupsTo(settings.LoRAs, document.getElementById("LoRA1Model"));
+			addGroupsTo(settings.LoRAs, document.getElementById("LoRA2Model"));
 			addGroupsTo(settings.samplers, document.getElementById("sampler"));
 			const positive = document.getElementById("positive") as HTMLTextAreaElement;
 			positive.rows = settings.promptLines;
@@ -225,6 +225,25 @@ namespace SDControl {
 		} catch (error) {
 			console.warn("Unable to load settings.");
 			console.trace(error);
+		}
+	}
+
+	function addGroupsTo(groups: any, target: HTMLElement): void {
+		for (const key in groups) {
+			const optgroup = document.createElement("optgroup");
+			optgroup.label = key;
+			const options = groups[key];
+			addOptionsTo(options, optgroup);
+			target.appendChild(optgroup);
+		}
+	}
+
+	function addOptionsTo(options: any, target: HTMLElement): void {
+		for (const key in options) {
+			const option = document.createElement("option");
+			option.textContent = key;
+			option.value = options[key];
+			target.appendChild(option);
 		}
 	}
 
@@ -260,12 +279,6 @@ namespace SDControl {
 			console.warn("Unable to load history.");
 			console.trace(error);
 		}
-	}
-
-	async function loadServer() {
-		await loadSettings();
-		await loadParameters();
-		await loadHistory();
 	}
 
 	initCollapsibleGroups();

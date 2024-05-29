@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"time"
 )
@@ -40,11 +41,6 @@ type GenData struct {
 	TaskData TaskData `json:"taskData"`
 	GenTime int `json:"genTime"`
 	ID int `json:"ID"`
-}
-
-func saveImage(encodedImage string, path string) {
-	decodedImage, _ := base64.StdEncoding.DecodeString(encodedImage)
-	os.WriteFile(path, decodedImage, 0700)
 }
 
 func genListFromFile(path string) []GenData {
@@ -98,9 +94,25 @@ func dummyResponseConverter(project string, requestBody []byte, responseBody []b
 }
 
 func saveResult(encodedTask []byte, encodedImage string, genTime int, project string, ID int) GenData {
-	saveImage(encodedImage, imagePath(project, ID))
+	decodedImage, _ := base64.StdEncoding.DecodeString(encodedImage)
+	imagePath := imagePath(project, ID);
+	os.WriteFile(imagePath, decodedImage, 0700)
 	imageName := imageName(ID)
 	taskData := taskDataFromBytes(encodedTask)
+
+	imageString := string(decodedImage)
+	seedRExp := regexp.MustCompile(`"seed":(\d+)`)
+	matches := seedRExp.FindAllStringSubmatch(imageString, 1)
+	if len(matches) > 0 {
+		match := matches[0]
+		if len(match) > 1 {
+			seed, err := strconv.Atoi(match[1])
+			if err == nil {
+				taskData["seed"] = seed
+			}
+		}
+	}
+
 	return GenData { imageName, taskData, genTime, ID }
 }
 
@@ -186,7 +198,7 @@ func removeGenConverter(project string, requestBody []byte) []byte {
 	ID, _ := strconv.Atoi(string(requestBody))
 	os.Remove(imagePath(project, ID))
 	historyData := genListFromFile(historyPath(project))
-	index := searchID(historyData, ID, 1, 0)
+	index := searchID(historyData, ID, 0, 0)
 	if index < 0 {
 		return []byte{}
 	}

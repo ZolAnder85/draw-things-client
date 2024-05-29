@@ -103,8 +103,9 @@ namespace ParamUtil {
 			result.loras = param.loras.map(fromDTHLoRA).filter(Boolean);
 		}
 
-		result.loras[0] = result.loras[0] || { file: null, weight: 0 }
-		result.loras[1] = result.loras[1] || { file: null, weight: 0 }
+		for (let i = 0; i < 3; ++i) {
+			result.loras[i] = result.loras[i] || { file: null, weight: 0 }
+		}
 
 		if (param.controls) {
 			result.controls = param.controls.map(fromDTHControl).filter(Boolean);

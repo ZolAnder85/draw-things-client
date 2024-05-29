@@ -7,11 +7,13 @@
 namespace TaskUtil {
 	function addFlexStyle(element: HTMLElement, taskData: GenParam): void {
 		let minWidth = Math.max(150, 150 * taskData.width / taskData.height);
-		let maxWidth = Math.min(500, 500 * taskData.width / taskData.height);
-		let initialWidth = Math.sqrt(100000 * taskData.width / taskData.height);
+		let maxWidth = Math.min(800, 500 * taskData.width / taskData.height);
+		let initialWidth = Math.max(250, 250 * taskData.width / taskData.height, Math.sqrt(80000 * taskData.width / taskData.height));
+		initialWidth = Math.max(minWidth, Math.min(maxWidth, initialWidth));
+		maxWidth = Math.max(initialWidth, 800 * taskData.width / taskData.height);
 		element.style.width = `${initialWidth}px`;
-		element.style.minWidth = `${minWidth}px`;
 		element.style.maxWidth = `${maxWidth}px`;
+		element.style.minHeight = `135px`;
 		element.style.aspectRatio = `${taskData.width} / ${taskData.height}`;
 		element.style.flexGrow = `${initialWidth}`;
 		element.style.flexShrink = `${initialWidth}`;
@@ -42,7 +44,8 @@ namespace TaskUtil {
 				...taskData,
 				positivePrompt: undefined,
 				negativePrompt: undefined,
-				seed: undefined
+				seed: undefined,
+				batchCount: undefined
 			});
 			event.stopPropagation();
 		});
@@ -211,6 +214,7 @@ class GenTask {
 			container.removeChild(currentWrapper);
 		}
 
+		// TODO: It is important to keep exact reference.
 		this.taskData = taskData;
 	}
 }

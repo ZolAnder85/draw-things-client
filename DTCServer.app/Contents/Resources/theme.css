@@ -134,7 +134,11 @@ input {
 	font-size: inherit;
 }
 
-button,
+button {
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
 select,
 input {
 	padding-left: 5px;

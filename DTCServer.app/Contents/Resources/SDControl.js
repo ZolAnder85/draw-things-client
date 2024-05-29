@@ -791,8 +791,9 @@ var ParamUtil;
         if (param.loras) {
             result.loras = param.loras.map(fromDTHLoRA).filter(Boolean);
         }
-        result.loras[0] = result.loras[0] || { file: null, weight: 0 };
-        result.loras[1] = result.loras[1] || { file: null, weight: 0 };
+        for (let i = 0; i < 3; ++i) {
+            result.loras[i] = result.loras[i] || { file: null, weight: 0 };
+        }
         if (param.controls) {
             result.controls = param.controls.map(fromDTHControl).filter(Boolean);
         }
@@ -818,7 +819,6 @@ var ParamUtil;
         }
         result.positivePrompt = param.prompt;
         result.negativePrompt = param.negative_prompt;
-        result.batchCount = param.batch_count;
         return result;
     }
     ParamUtil.fromDTHGen = fromDTHGen;
@@ -1028,11 +1028,13 @@ var TaskUtil;
 (function (TaskUtil) {
     function addFlexStyle(element, taskData) {
         let minWidth = Math.max(150, 150 * taskData.width / taskData.height);
-        let maxWidth = Math.min(500, 500 * taskData.width / taskData.height);
-        let initialWidth = Math.sqrt(100000 * taskData.width / taskData.height);
+        let maxWidth = Math.min(800, 500 * taskData.width / taskData.height);
+        let initialWidth = Math.max(250, 250 * taskData.width / taskData.height, Math.sqrt(80000 * taskData.width / taskData.height));
+        initialWidth = Math.max(minWidth, Math.min(maxWidth, initialWidth));
+        maxWidth = Math.max(initialWidth, 800 * taskData.width / taskData.height);
         element.style.width = `${initialWidth}px`;
-        element.style.minWidth = `${minWidth}px`;
         element.style.maxWidth = `${maxWidth}px`;
+        element.style.minHeight = `135px`;
         element.style.aspectRatio = `${taskData.width} / ${taskData.height}`;
         element.style.flexGrow = `${initialWidth}`;
         element.style.flexShrink = `${initialWidth}`;
@@ -1059,8 +1061,8 @@ var TaskUtil;
                 ...taskData,
                 positivePrompt: undefined,
                 negativePrompt: undefined,
-                batchCount: undefined,
-                seed: undefined
+                seed: undefined,
+                batchCount: undefined
             });
             event.stopPropagation();
         });
@@ -1109,7 +1111,7 @@ var TaskUtil;
     }
     function addClickHandler(target, taskData) {
         target.addEventListener("click", event => {
-            SDControl.applyParameters({ ...taskData, batchCount: 1 });
+            SDControl.applyParameters(taskData);
             event.stopPropagation();
         });
     }
@@ -1246,6 +1248,10 @@ var SDControl;
         }
     }
     SDControl.applyParameters = applyParameters;
+    function applyNextSeed() {
+        const seedInput = document.getElementById("currentSeed");
+        seedInput.value = XSRandom.next(parseInt(seedInput.value));
+    }
     function createTaskData() {
         const taskData = ParamUtil.duplicateSDGen(defaultGenParam);
         for (const input of inputs) {
@@ -1298,11 +1304,13 @@ var SDControl;
     }
     function addTask(taskData) {
         queue.push(new GenTask(container, taskData));
+        console.log(queue.map(data => data.taskData));
     }
     SDControl.addTask = addTask;
     async function executeAll() {
         waiting = false;
         while (queue.length) {
+            console.log(queue.map(data => data.taskData));
             await executeTask(queue.shift());
         }
         waiting = true;
@@ -1319,8 +1327,12 @@ var SDControl;
         }
     }
     function removeTask(taskData) {
+        console.log("removeing task:");
+        console.log(queue.map(data => data.taskData));
         const index = queue.find(genTask => genTask.taskData == taskData);
         queue.splice(index, 1);
+        console.log(queue.map(data => data.taskData));
+        console.log("removeing ended");
     }
     SDControl.removeTask = removeTask;
     function initCollapsibleGroups() {
@@ -1366,36 +1378,26 @@ var SDControl;
             });
         }
     }
-    function addOptionsTo(options, target) {
-        for (const key in options) {
-            const option = document.createElement("option");
-            option.textContent = key;
-            option.value = options[key];
-            target.appendChild(option);
-        }
-    }
-    function addGroupsTo(groups, target) {
-        for (const key in groups) {
-            const optgroup = document.createElement("optgroup");
-            optgroup.label = key;
-            const options = groups[key];
-            addOptionsTo(options, optgroup);
-            target.appendChild(optgroup);
-        }
-    }
-    function loadProject(projectName) {
-        window.location.href = `?p=${projectName}`;
-    }
     function initControlInterface() {
         inputs = document.querySelectorAll("[SDTarget]");
         container = document.getElementById("images");
-        const generateButton = document.getElementById("generate");
+        const nextSeedButton = document.getElementById("nextSeed");
+        nextSeedButton.addEventListener("click", () => applyNextSeed());
         const randomizeCheckBox = document.getElementById("randomize");
+        const generateButton = document.getElementById("generate");
         generateButton.addEventListener("click", () => addAll(randomizeCheckBox.checked));
         const projectNameInput = document.getElementById("projectName");
         projectNameInput.value = SDConnector.project;
         const loadProjectButton = document.getElementById("loadProject");
         loadProjectButton.addEventListener("click", () => loadProject(projectNameInput.value));
+    }
+    function loadProject(projectName) {
+        window.location.href = `?p=${projectName}`;
+    }
+    async function loadServer() {
+        await loadSettings();
+        await loadParameters();
+        await loadHistory();
     }
     async function loadSettings() {
         try {
@@ -1404,6 +1406,7 @@ var SDControl;
             addGroupsTo(settings.models, document.getElementById("refinerModel"));
             addGroupsTo(settings.LoRAs, document.getElementById("LoRA0Model"));
             addGroupsTo(settings.LoRAs, document.getElementById("LoRA1Model"));
+            addGroupsTo(settings.LoRAs, document.getElementById("LoRA2Model"));
             addGroupsTo(settings.samplers, document.getElementById("sampler"));
             const positive = document.getElementById("positive");
             positive.rows = settings.promptLines;
@@ -1419,6 +1422,23 @@ var SDControl;
         catch (error) {
             console.warn("Unable to load settings.");
             console.trace(error);
+        }
+    }
+    function addGroupsTo(groups, target) {
+        for (const key in groups) {
+            const optgroup = document.createElement("optgroup");
+            optgroup.label = key;
+            const options = groups[key];
+            addOptionsTo(options, optgroup);
+            target.appendChild(optgroup);
+        }
+    }
+    function addOptionsTo(options, target) {
+        for (const key in options) {
+            const option = document.createElement("option");
+            option.textContent = key;
+            option.value = options[key];
+            target.appendChild(option);
         }
     }
     function createCatalogue(name, categories, CatalogueType) {
@@ -1452,11 +1472,6 @@ var SDControl;
             console.warn("Unable to load history.");
             console.trace(error);
         }
-    }
-    async function loadServer() {
-        await loadSettings();
-        await loadParameters();
-        await loadHistory();
     }
     initCollapsibleGroups();
     initCombinedInputs();
