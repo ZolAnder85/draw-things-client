@@ -214,7 +214,7 @@ class GenTask {
 			container.removeChild(currentWrapper);
 		}
 
-		// TODO: It is important to keep exact reference.
+		// it is important to keep exact reference
 		this.taskData = taskData;
 	}
 }

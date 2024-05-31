@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -37,10 +38,10 @@ func responseDataFromBytes(bytes []byte) (result ResponseData) {
 }
 
 type GenData struct {
+	ID int `json:"ID"`
 	ImageName string `json:"imageName"`
 	TaskData TaskData `json:"taskData"`
 	GenTime int `json:"genTime"`
-	ID int `json:"ID"`
 }
 
 func genListFromFile(path string) []GenData {
@@ -58,8 +59,25 @@ func bytesFromGenList(genList []GenData) (result []byte) {
 	return
 }
 
+func formatGenData(genData GenData) string {
+	bytes, _ := json.MarshalIndent(genData, "", "")
+	result := string(bytes)
+	result = strings.ReplaceAll(result, "\n", " ")
+	result = strings.ReplaceAll(result, "[ ", "[")
+	return strings.ReplaceAll(result, " ]", "]")
+}
+
 func saveGenList(genList []GenData, path string) {
-	bytes, _ := json.MarshalIndent(genList, "", "\t")
+	result := "["
+	for index, genData := range genList {
+		if index > 0 {
+			result += ","
+		}
+		result += "\n\t"
+		result += formatGenData(genData)
+	}
+	result += "\n]"
+	bytes := []byte(result)
 	os.WriteFile(path, bytes, 0700)
 }
 
@@ -113,7 +131,7 @@ func saveResult(encodedTask []byte, encodedImage string, genTime int, project st
 		}
 	}
 
-	return GenData { imageName, taskData, genTime, ID }
+	return GenData { ID, imageName, taskData, genTime }
 }
 
 func generationConverter(project string, requestBody []byte, responseBody []byte, genTime int) []byte {
@@ -308,7 +326,6 @@ func main() {
 	parametersTarget := "http://127.0.0.1:" + * targetPort
 	generationTarget := parametersTarget + "/sdapi/v1/txt2img"
 
-	// TODO: Add models to options if missing.
 	http.HandleFunc("/parameters", createTargetHandler(dummyRequestConverter, dummyResponseConverter, parametersTarget))
 	http.HandleFunc("/generate", createTargetHandler(dummyRequestConverter, generationConverter, generationTarget))
 

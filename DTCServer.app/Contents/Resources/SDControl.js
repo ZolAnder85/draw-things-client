@@ -1442,12 +1442,14 @@ var SDControl;
         }
     }
     function createCatalogue(name, categories, CatalogueType) {
-        categories = Object.values(categories);
         const map = { disabled: null };
-        for (const category of categories) {
-            for (const key in category) {
-                const dashed = key.replace(/[:\s]+/g, "-");
-                map[dashed] = category[key];
+        if (categories) {
+            categories = Object.values(categories);
+            for (const category of categories) {
+                for (const key in category) {
+                    const dashed = key.replace(/[\s:-]+/g, "-");
+                    map[dashed] = category[key];
+                }
             }
         }
         return new CatalogueType(name, map);

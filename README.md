@@ -1,7 +1,7 @@
 # DrawThingsControl
 
 author: @ZolAnder  
-version: beta 0.10.8
+version: beta 0.10.9
 
 DTCServer and DTCWebUI for controlling Draw Things from anywhere on the local network.
 
@@ -66,6 +66,7 @@ It can only be shut down by force quitting from the dock or the force quit menu.
 - move results with arrows
 - Project switch on enter
 - Add separator element
+- More result moving
 
 ## Look and Feel
 
@@ -75,6 +76,7 @@ It can only be shut down by force quitting from the dock or the force quit menu.
 
 - Image importing
 - Unlimited LoRAs?
+- Add missing models when loading
 - Mark as favorite or star rating
 - Restore default on double click
 - Filter results view

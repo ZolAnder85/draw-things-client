@@ -3,10 +3,10 @@
 /// <reference path="ParamUtil.ts" />
 
 interface GenData {
+	ID: number;
 	imageName: string;
 	taskData: GenParam;
 	genTime: number;
-	ID: number;
 }
 
 namespace SDConnector {
@@ -54,10 +54,6 @@ namespace SDConnector {
 				return sendRequest("/move-gen-prev", "POST", ID);
 			case Movement.NEXT:
 				return sendRequest("/move-gen-next", "POST", ID);
-			// case Movement.FIRST:
-			// 	return sendRequest("/move-gen-first", "POST", ID);
-			// case Movement.LAST:
-			// 	return sendRequest("/move-gen-last", "POST", ID);
 		}
 	}
 

@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Server",
+			"group": "build",
+			"type": "shell",
+			"command": "killall DTCServer; go build -o DTCServer.app/Contents/MacOS/DTCServer Source/Server/server.go; open DTCServer.app"
+		},
+		{
+			"label": "Distribute",
+			"group": "build",
+			"type": "shell",
+			"command": ".vscode/distribute.sh"
+		},
+		{
+			"label": "Watch WebUI",
+			"group": "build",
+			"type": "shell",
+			"command": "cd Source/SDControl; tsc -w"
+		}
+	]
+}

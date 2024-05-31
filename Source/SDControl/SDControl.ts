@@ -248,13 +248,14 @@ namespace SDControl {
 	}
 
 	function createCatalogue(name: string, categories: any, CatalogueType: any): any {
-		categories = Object.values(categories);
 		const map = { disabled: null };
-		for (const category of categories) {
-			for (const key in category) {
-				// TODO: Could this be nicer?
-				const dashed = key.replace(/[:\s]+/g, "-");
-				map[dashed] = category[key];
+		if (categories) {
+			categories = Object.values(categories);
+			for (const category of categories) {
+				for (const key in category) {
+					const dashed = key.replace(/[\s:-]+/g, "-");
+					map[dashed] = category[key];
+				}
 			}
 		}
 		return new CatalogueType(name, map);
