@@ -11,7 +11,8 @@ class STDPreprocessor extends BasePreprocessor {
 
 	private randomDigitsHandler = (parameters: ParameterList) => {
 		let result = "";
-		for (let i = 0; i < parameters.nextInt(); ++i) {
+		const count = parameters.nextInt();
+		for (let i = 0; i < count; ++i) {
 			result += String.fromCharCode(48 + this.random.next() % 10);
 		}
 		return [ result ];
@@ -19,7 +20,8 @@ class STDPreprocessor extends BasePreprocessor {
 
 	private randomLettersHandler = (parameters: ParameterList) => {
 		let result = "";
-		for (let i = 0; i < parameters.nextInt(); ++i) {
+		const count = parameters.nextInt();
+		for (let i = 0; i < count; ++i) {
 			result += String.fromCharCode(97 + this.random.next() % 25);
 		}
 		return [ result ];

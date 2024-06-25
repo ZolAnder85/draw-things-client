@@ -24,7 +24,7 @@ class SDCommandEngine extends BaseCommandEngine {
 		this.initial = ParamUtil.duplicateSDGen(taskData);
 		this.current = ParamUtil.duplicateSDGen(taskData);
 		this.positive = "";
-		this.negative = "";
+		this.negative = taskData.negativePrompt;
 		this.handler = handler;
 	}
 

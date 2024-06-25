@@ -41,7 +41,7 @@ class XSRandom {
         return seed >>> 0;
     }
     constructor(seed) {
-        this.seed = seed;
+        this.seed = seed || 3850;
     }
     next() {
         const result = this.seed;
@@ -253,14 +253,16 @@ class STDPreprocessor extends BasePreprocessor {
         };
         this.randomDigitsHandler = (parameters) => {
             let result = "";
-            for (let i = 0; i < parameters.nextInt(); ++i) {
+            const count = parameters.nextInt();
+            for (let i = 0; i < count; ++i) {
                 result += String.fromCharCode(48 + this.random.next() % 10);
             }
             return [result];
         };
         this.randomLettersHandler = (parameters) => {
             let result = "";
-            for (let i = 0; i < parameters.nextInt(); ++i) {
+            const count = parameters.nextInt();
+            for (let i = 0; i < count; ++i) {
                 result += String.fromCharCode(97 + this.random.next() % 25);
             }
             return [result];
@@ -476,7 +478,7 @@ class SDCommandEngine extends BaseCommandEngine {
         this.initial = ParamUtil.duplicateSDGen(taskData);
         this.current = ParamUtil.duplicateSDGen(taskData);
         this.positive = "";
-        this.negative = "";
+        this.negative = taskData.negativePrompt;
         this.handler = handler;
     }
     buildAPIMap() {
@@ -1304,13 +1306,11 @@ var SDControl;
     }
     function addTask(taskData) {
         queue.push(new GenTask(container, taskData));
-        console.log(queue.map(data => data.taskData));
     }
     SDControl.addTask = addTask;
     async function executeAll() {
         waiting = false;
         while (queue.length) {
-            console.log(queue.map(data => data.taskData));
             await executeTask(queue.shift());
         }
         waiting = true;
@@ -1327,12 +1327,8 @@ var SDControl;
         }
     }
     function removeTask(taskData) {
-        console.log("removeing task:");
-        console.log(queue.map(data => data.taskData));
         const index = queue.find(genTask => genTask.taskData == taskData);
         queue.splice(index, 1);
-        console.log(queue.map(data => data.taskData));
-        console.log("removeing ended");
     }
     SDControl.removeTask = removeTask;
     function initCollapsibleGroups() {

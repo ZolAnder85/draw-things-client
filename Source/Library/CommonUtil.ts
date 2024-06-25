@@ -50,7 +50,7 @@ class XSRandom {
 	private seed: number;
 
 	public constructor(seed: number) {
-		this.seed = seed;
+		this.seed = seed || 3850;
 	}
 
 	public next(): number {

@@ -104,13 +104,11 @@ namespace SDControl {
 
 	export function addTask(taskData: GenParam): void {
 		queue.push(new GenTask(container, taskData));
-		console.log(queue.map(data => data.taskData));
 	}
 
 	async function executeAll() {
 		waiting = false;
 		while (queue.length) {
-			console.log(queue.map(data => data.taskData));
 			await executeTask(queue.shift());
 		}
 		waiting = true;
@@ -128,12 +126,8 @@ namespace SDControl {
 	}
 
 	export function removeTask(taskData: GenParam): void {
-		console.log("removeing task:");
-		console.log(queue.map(data => data.taskData));
 		const index = queue.find(genTask => genTask.taskData == taskData);
 		queue.splice(index, 1);
-		console.log(queue.map(data => data.taskData));
-		console.log("removeing ended");
 	}
 
 	function initCollapsibleGroups() {

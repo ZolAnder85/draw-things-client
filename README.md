@@ -83,3 +83,4 @@ It can only be shut down by force quitting from the dock or the force quit menu.
 	- Save it as a new project
 - Sort results view
 	- Save the new order
+- Remove negative prompt
